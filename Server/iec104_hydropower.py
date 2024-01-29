@@ -2,6 +2,7 @@ import argparse
 import socket
 import struct
 import threading
+import random
 import time
 
 IEC104_PORT = 2404
@@ -29,21 +30,47 @@ SINGLE_COMMAND_START = b'\x68\x0e\x00\x00\x00\x00\x2d\x01\x06\x01'
 SET_POINT_START = b'\x68\x0e\x00\x00\x00\x00\x32\x01\x06\x01'
 INTERROGATION_FRAME = b'\x68\x08\x00\x00\x00\x00\x64\x01\x06\x01\x00\x00\x00\x00'
 
+WATER_INLET = 100 # IOA 100 - BOOL - Water inlet valve to turbine
+EXCITE_SWITCH = 101 # IOA 101 - BOOL - Switch exciting voltage in generator
+TRANSFORMER_SWITCH = 102 # IOA 102 - BOOL - Switch between generator and transformer
+GRID_SWITCH = 103 # IOA 103 - BOOL - Switch between transformer and power grid
+COOLING_SWITCH = 104 # IOA 104 - BOOL - Enable cooling fluid system for bearings, auto-operated if above limit
+
+TURBINE_SPEED = 110 # IOA 110 - Float - RPM of turbine
+GENERATOR_VOLTAGE = 111 # IOA 111 - Float - Voltage produced by generator
+GRID_VOLTAGE = 112 # IOA 112 - Estimated MHw produced, demand will fluctuate
+BEARING_TEMP = 113 # IOA 113 - Bearing temp
+
+MAX_WATER_SPEED = 5 # m3/s
+MAX_TURBINE_SPEED = 250 # RPM
+PROD_VOLTAGE = 6500 # Volts
+
 class IEC104Server:
     def __init__(self, host, port, debug=False):
         self.debug = debug
         self.listening = False
 
-        self.ioa_register = [{'value': 0, 'description': ''} for _ in range(IOA_SIZE)]
+        # Initialize IOA array with default values (0)
+        self.ioa_register = [0] * IOA_SIZE
         self.used_bool_ioa = []
-        self.used_decimal_ioa = []
+        self.used_float_ioa = []
 
-        # Initialize IOAs with a specific value and description
-        self.ioa_register[100] = {'value': 123.12, 'description': 'dec test'}
-        self.ioa_register[110] = {'value': 1, 'description': 'bool test'}
+        # Set IOA startup values
+        self.ioa_register[WATER_INLET] = 0
+        self.ioa_register[EXCITE_SWITCH] = 0
+        self.ioa_register[TRANSFORMER_SWITCH] = 0
+        self.ioa_register[GRID_SWITCH] = 0
+        self.ioa_register[COOLING_SWITCH] = 0
 
-        self.used_bool_ioa.extend([110])
-        self.used_decimal_ioa.extend([100])
+        self.ioa_register[TURBINE_SPEED] = 0.0
+        self.ioa_register[GENERATOR_VOLTAGE] = 0.0
+        self.ioa_register[GRID_VOLTAGE] = 0.0
+        self.ioa_register[BEARING_TEMP] = 0.0
+
+        self.used_bool_ioa.extend([WATER_INLET, EXCITE_SWITCH, TRANSFORMER_SWITCH, GRID_SWITCH, COOLING_SWITCH])
+        self.used_float_ioa.extend([TURBINE_SPEED, GENERATOR_VOLTAGE, GRID_VOLTAGE, BEARING_TEMP])
+
+        self.water_speed = 0.0
 
         # Sequence numbers
         self.send_sequence_number = 0
@@ -61,10 +88,72 @@ class IEC104Server:
 
     def simulate_data(self):
         while True:
-            print("Decimal IOA 100: " + str(self.ioa_register[100]['value']))
-            print("Bool IOA 110: " + str(self.ioa_register[110]['value']))
+            self.update_water_speed()
+            self.ioa_register[TURBINE_SPEED] = self.calculate_turbine_speed()
+            self.ioa_register[GENERATOR_VOLTAGE] = self.update_generator_voltage()
 
-            time.sleep(5)
+
+
+            time.sleep(1)
+
+    
+    def update_water_speed(self):
+        """
+        Update the water speed based on the status of the water inlet.
+        """
+        if self.ioa_register[WATER_INLET] == 1:
+            # Increase water speed but don't let it go above MAX_WATER_SPEED
+            self.water_speed = min(MAX_WATER_SPEED, self.water_speed + 0.5)
+        else:
+            # Decrease water speed but don't let it go below 0
+            self.water_speed = max(0, self.water_speed - 0.5)
+
+        # Optionally print the current water speed for debugging
+        if self.debug:
+            print(f"Current water speed: {self.water_speed}")
+
+
+    def calculate_turbine_speed(self):
+        """
+        Calculate turbine speed as a function of water speed.
+        """
+        if self.water_speed <= 0.80 * MAX_WATER_SPEED:
+            turbine_speed = self.water_speed * (MAX_TURBINE_SPEED / MAX_WATER_SPEED)
+        else:
+            turbine_speed = self.ioa_register[TURBINE_SPEED] + 3
+
+        # Ensure turbine speed does not exceed maximum
+        turbine_speed = min(turbine_speed, MAX_TURBINE_SPEED)
+
+        # Optionally print the current turbine speed for debugging
+        if self.debug:
+            print(f"Current turbine speed: {turbine_speed}")
+
+        return turbine_speed
+
+
+    def update_generator_voltage(self):
+        """
+        Update the generator voltage based on the turbine speed and excite switch.
+        """
+        if self.ioa_register[EXCITE_SWITCH] == 0:
+            # If the excite switch is off, set generator voltage to 0
+            generator_voltage = 0.0
+        else:
+            # If the excite switch is on, calculate generator voltage based on turbine speed
+            proportion = self.ioa_register[TURBINE_SPEED] / MAX_TURBINE_SPEED
+            base_voltage = proportion * PROD_VOLTAGE
+            # Random fluctuation of 3%
+            fluctuation = random.uniform(-0.03, 0.03)
+            generator_voltage = base_voltage * (1 + fluctuation)
+
+        # Optionally print the current generator voltage for debugging
+        if self.debug:
+            print(f"Current generator voltage: {self.ioa_register[GENERATOR_VOLTAGE]}")
+
+        return generator_voltage
+
+
 
 
     def listen(self):
@@ -132,12 +221,12 @@ class IEC104Server:
 
         # Send Type 1 responses
         for i in range(1, 9):
-            asdu = self.construct_asdu(SINGLE_INFO, 6, 1, 110, self.ioa_register[110]['value'])
+            asdu = self.construct_asdu(SINGLE_INFO, 6, 1, 110, self.ioa_register[110])
             self.send_asdu_response(conn, asdu)
             time.sleep(DELAY_TIME)
 
         for i in range(1, 5):
-            asdu = self.construct_asdu(FLOAT_INFO, 6, 1, 100, self.ioa_register[100]['value'])
+            asdu = self.construct_asdu(FLOAT_INFO, 6, 1, 100, self.ioa_register[100])
             self.send_asdu_response(conn, asdu)
             time.sleep(DELAY_TIME)
         
@@ -160,7 +249,7 @@ class IEC104Server:
             # Extract command qualifier and value
             command_value = request[command_value_index + 1] if command_value_index + 1 < len(request) else None
             print(f"Handling single command --- IOA: {ioa}, Value: {command_value}")
-            self.ioa_register[ioa]['value'] = command_value
+            self.ioa_register[ioa] = command_value
 
             # Construct and send response ASDU
             response_asdu = self.construct_asdu(SINGLE_CMD, ACT_CONF_COT, CASDU, ioa, command_value)
@@ -194,7 +283,7 @@ class IEC104Server:
             # Use struct.unpack with the correct format specifier for big-endian 32-bit float
             setpoint_value = struct.unpack('>f', setpoint_value_bytes)[0]
             print(f"Handling setpoint command --- IOA: {ioa}, Value: {setpoint_value}")
-            self.ioa_register[ioa]['value'] = setpoint_value
+            self.ioa_register[ioa] = setpoint_value
 
             # Construct and send response ASDU
             response_asdu = self.construct_asdu(SET_POINT_CMD, ACT_CONF_COT, CASDU, ioa, setpoint_value)
