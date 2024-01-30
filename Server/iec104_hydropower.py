@@ -38,12 +38,18 @@ COOLING_SWITCH = 104 # IOA 104 - BOOL - Enable cooling fluid system for bearings
 
 TURBINE_SPEED = 110 # IOA 110 - Float - RPM of turbine
 GENERATOR_VOLTAGE = 111 # IOA 111 - Float - Voltage produced by generator
-GRID_VOLTAGE = 112 # IOA 112 - Estimated MHw produced, demand will fluctuate
+GRID_POWER = 112 # IOA 112 - Estimated kW produced, demand will fluctuate
 BEARING_TEMP = 113 # IOA 113 - Bearing temp
 
 MAX_WATER_SPEED = 5 # m3/s
 MAX_TURBINE_SPEED = 250 # RPM
-PROD_VOLTAGE = 6500 # Volts
+PROD_VOLTAGE = 5500 # Volts
+POWER_OUTPUT_CONV = 155.88 # P = V * sqrt(3) * I * cos(phi) = V * sqrt(3) * 100 * 0.9 = V * 155.88
+
+GRID_POWER_ADJUSTMENT_INTERVAL = 10  # 2 minutes in seconds
+GRID_POWER_FLUCTUATION = 0.3  # 30%
+GRID_POWER_MIDPOINT = 870000
+ADJUSTMENT_FACTOR = 30
 
 class IEC104Server:
     def __init__(self, host, port, debug=False):
@@ -64,13 +70,15 @@ class IEC104Server:
 
         self.ioa_register[TURBINE_SPEED] = 0.0
         self.ioa_register[GENERATOR_VOLTAGE] = 0.0
-        self.ioa_register[GRID_VOLTAGE] = 0.0
+        self.ioa_register[GRID_POWER] = 0.0
         self.ioa_register[BEARING_TEMP] = 0.0
 
         self.used_bool_ioa.extend([WATER_INLET, EXCITE_SWITCH, TRANSFORMER_SWITCH, GRID_SWITCH, COOLING_SWITCH])
-        self.used_float_ioa.extend([TURBINE_SPEED, GENERATOR_VOLTAGE, GRID_VOLTAGE, BEARING_TEMP])
+        self.used_float_ioa.extend([TURBINE_SPEED, GENERATOR_VOLTAGE, GRID_POWER, BEARING_TEMP])
 
         self.water_speed = 0.0
+        self.grid_power_target = GRID_POWER_MIDPOINT
+        self.last_target_update_time = time.time()
 
         # Sequence numbers
         self.send_sequence_number = 0
@@ -91,6 +99,7 @@ class IEC104Server:
             self.update_water_speed()
             self.ioa_register[TURBINE_SPEED] = self.calculate_turbine_speed()
             self.ioa_register[GENERATOR_VOLTAGE] = self.update_generator_voltage()
+            self.ioa_register[GRID_POWER] = self.update_grid_power()
 
 
 
@@ -153,6 +162,51 @@ class IEC104Server:
 
         return generator_voltage
 
+
+    def update_grid_power_target(self):
+        """
+        Update the target grid power every 2 minutes.
+        """
+        current_time = time.time()
+        if current_time - self.last_target_update_time >= GRID_POWER_ADJUSTMENT_INTERVAL:
+            fluctuation = GRID_POWER_MIDPOINT * GRID_POWER_FLUCTUATION
+            self.grid_power_target = GRID_POWER_MIDPOINT + random.uniform(-fluctuation, fluctuation)
+            self.last_target_update_time = current_time
+
+            print(f"New target is: {self.grid_power_target}")
+
+            if self.debug:
+                print(f"New target is: {self.grid_power_target}")
+
+
+    def update_grid_power(self):
+        """
+        Gradually adjust the grid power towards the target based on transformer and grid switches.
+        """
+        self.update_grid_power_target()
+        # Check if transformer switch or grid switch is off, or low generator voltage
+        if (self.ioa_register[TRANSFORMER_SWITCH] == 0 or 
+            self.ioa_register[GRID_SWITCH] == 0 or
+            self.ioa_register[GENERATOR_VOLTAGE] < PROD_VOLTAGE * 0.8):
+
+            grid_power = 0
+        else:
+            if self.ioa_register[GRID_POWER] == 0:
+                # Start from mid point if grid power was 0
+                power_difference = self.grid_power_target - GRID_POWER_MIDPOINT
+                adjustment_step = power_difference / ADJUSTMENT_FACTOR
+                grid_power = GRID_POWER_MIDPOINT + adjustment_step
+            else:
+                power_difference = self.grid_power_target - self.ioa_register[GRID_POWER]
+                adjustment_step = power_difference / ADJUSTMENT_FACTOR
+                grid_power = self.ioa_register[GRID_POWER] + adjustment_step
+
+        print(f"Grid power adjusted to: {grid_power}")
+        # Optionally print the current grid power for debugging
+        if self.debug:
+            print(f"Grid power adjusted to: {grid_power}")
+
+        return grid_power
 
 
 
