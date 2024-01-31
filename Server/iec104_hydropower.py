@@ -19,6 +19,7 @@ INTERROGATION_CMD = 100 # C_IC_NA_1
 ACT_COT = 6 # Activation
 ACT_CONF_COT = 7 # Activation confirmation
 IOA_ERROR_COT = 47 # Unknown IOA
+
 CASDU = 1 # Using CASDU address 1
 
 STARTDT_ACT_FRAME = b'\x68\x04\x07\x00\x00\x00'
@@ -47,9 +48,14 @@ PROD_VOLTAGE = 5500 # Volts
 POWER_OUTPUT_CONV = 155.88 # P = V * sqrt(3) * I * cos(phi) = V * sqrt(3) * 100 * 0.9 = V * 155.88
 
 GRID_POWER_ADJUSTMENT_INTERVAL = 10  # 2 minutes in seconds
-GRID_POWER_FLUCTUATION = 0.3  # 30%
-GRID_POWER_MIDPOINT = 870000
-ADJUSTMENT_FACTOR = 30
+GRID_POWER_FLUCTUATION = 0.3  # 30% change in demand
+GRID_POWER_MIDPOINT = 870000 # Watt produced midpoint
+ADJUSTMENT_FACTOR = 30 # Used for setting how fast the grid power will change towards target point
+
+TEMPERATURE_ENV = 15 # 15 degrees celsius assumed for environment
+TEMPERATURE_START_COOLING = 70 # Start cooling system at 70 degrees celsius
+TEMPERATURE_STOP_COOLING = 40 # Stop cooling system at 40 degrees celsius
+COOLING_FACTOR = 0.02
 
 class IEC104Server:
     def __init__(self, host, port, debug=False):
@@ -71,7 +77,7 @@ class IEC104Server:
         self.ioa_register[TURBINE_SPEED] = 0.0
         self.ioa_register[GENERATOR_VOLTAGE] = 0.0
         self.ioa_register[GRID_POWER] = 0.0
-        self.ioa_register[BEARING_TEMP] = 0.0
+        self.ioa_register[BEARING_TEMP] = TEMPERATURE_ENV
 
         self.used_bool_ioa.extend([WATER_INLET, EXCITE_SWITCH, TRANSFORMER_SWITCH, GRID_SWITCH, COOLING_SWITCH])
         self.used_float_ioa.extend([TURBINE_SPEED, GENERATOR_VOLTAGE, GRID_POWER, BEARING_TEMP])
@@ -100,8 +106,8 @@ class IEC104Server:
             self.ioa_register[TURBINE_SPEED] = self.calculate_turbine_speed()
             self.ioa_register[GENERATOR_VOLTAGE] = self.update_generator_voltage()
             self.ioa_register[GRID_POWER] = self.update_grid_power()
-
-
+            self.ioa_register[BEARING_TEMP] = self.update_bearing_temperature()
+            self.ioa_register[COOLING_SWITCH] = self.manage_cooling_system()
 
             time.sleep(1)
 
@@ -208,6 +214,50 @@ class IEC104Server:
 
         return grid_power
 
+
+    def update_bearing_temperature(self):
+        """
+        Update the bearing temperature based on the turbine speed.
+        """
+        # Let bearing temp increase faster if the grid load is high
+        grid_load_factor = (self.ioa_register[GRID_POWER] / GRID_POWER_MIDPOINT)
+        grid_load = grid_load_factor * grid_load_factor
+        
+        if self.ioa_register[TURBINE_SPEED] > 0:
+        # Calculate the increment rate based on turbine speed
+            increment_rate = (self.ioa_register[TURBINE_SPEED] / MAX_TURBINE_SPEED) * 0.5 * grid_load
+            bearing_temp = self.ioa_register[BEARING_TEMP] + increment_rate
+        else:
+            # Decrease the bearing temperature if turbine isnt running
+            decrease_amount = self.ioa_register[BEARING_TEMP] * COOLING_FACTOR
+            bearing_temp = max(self.ioa_register[BEARING_TEMP] - decrease_amount, TEMPERATURE_ENV)
+
+        # If cooling system is active, cool down bearing temp
+        if self.ioa_register[COOLING_SWITCH] == 1:
+            decrease_amount = self.ioa_register[BEARING_TEMP] * COOLING_FACTOR
+            bearing_temp = max(self.ioa_register[BEARING_TEMP] - decrease_amount, TEMPERATURE_ENV)
+
+        print(f"Current bearing temperature: {self.ioa_register[BEARING_TEMP]}")
+        # Optionally print the current bearing temperature for debugging
+        if self.debug:
+            print(f"Current bearing temperature: {self.ioa_register[BEARING_TEMP]}")
+
+        return bearing_temp
+
+
+    def manage_cooling_system(self):
+        """
+        Automatically manage the cooling system based on bearing temperature.
+        """
+        enable_cooling = self.ioa_register[COOLING_SWITCH]
+        if self.ioa_register[BEARING_TEMP] > TEMPERATURE_START_COOLING:
+            # Activate cooling system if bearing temperature is above 70
+            enable_cooling = 1
+        if self.ioa_register[BEARING_TEMP] < TEMPERATURE_STOP_COOLING:
+            # Deactivate cooling system if bearing temperature is below 40
+            enable_cooling = 0
+
+        return enable_cooling
 
 
     def listen(self):
