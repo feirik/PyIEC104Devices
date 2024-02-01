@@ -18,6 +18,7 @@ STARTDT_ACT_FRAME = b'\x68\x04\x07\x00\x00\x00'
 STARTDT_CON_FRAME = b'\x68\x04\x0b\x00\x00\x00'
 STOPDT_ACT_FRAME = b'\x68\x04\x13\x00\x00\x00'
 STOPDT_CON_FRAME = b'\x68\x04\x23\x00\x00\x00'
+INTERROGATION_FRAME = b'\x68\x0e\xc2\x00\x3e\x00\x64\x01\x06\x00\x03\x00\x00\x00\x00\x14'
 
 SINGLE_INFO = 1 # M_SP_NA_1
 FLOAT_INFO = 13 # M_ME_NC_1
@@ -118,7 +119,7 @@ class IEC104Client:
         Send a STOPDT ACT (Stop Data Transfer Activation) frame to the server
         and wait for the STOPDT CON (Stop Data Transfer Confirmation) frame.
         """
-        success = False  # Default success status
+        success = False
 
         if self.sock:
             try:
@@ -167,8 +168,14 @@ class IEC104Client:
         """
         if self.sock:
             try:
+                print(type_id)
                 # Construct the APCI header
-                start_bytes = b'\x68\x0E'  # Start byte
+                if type_id == SINGLE_CMD:
+                    start_bytes = b'\x68\x0E'
+                elif type_id == SET_POINT_CMD:
+                    start_bytes = b'\x68\x12'
+                else:
+                    start_bytes = b'\x68\x0E'
                 # Assuming control fields for I-format frame, assumed client sends first message in TCP
                 send_sequence_number = b'\x00\x00'
                 receive_sequence_number = b'\x00\x00'
@@ -190,31 +197,23 @@ class IEC104Client:
 
     def send_interrogation_command(self):
         """
-        Send an Interrogation Command to the IEC 104 server.
+        Dynamically construct and send an Interrogation Command to the IEC 104 server.
         """
         try:
-            # Short delay to ensure the message is sent properly
-            time.sleep(DELAY_TIME)
-
-            # Construct the APCI header for the Interrogation Command
-            start_byte = b'\x68'  # Start byte
-            length_byte = b'\x08'  # Length byte indicating 8 bytes follow
+            # Assuming these are tracked or initialized elsewhere
+            send_sequence_number = 0x00  # Increment as needed
+            receive_sequence_number = 0x00  # Update based on communication
             
-            # Control field for the Interrogation Command (I-format)
-            # Default sequence numbers, TODO fix it
-            send_sequence_number = b'\x00\x00'
-            receive_sequence_number = b'\x00\x00'
-            control_field = send_sequence_number + receive_sequence_number
-
-            apci = start_byte + length_byte + control_field
-
-            # Construct an ASDU for the Interrogation Command, IOA 0 for system wide interrogation
-            asdu = self.construct_asdu(INTERROGATION_CMD, ACT_COT, CASDU, 0)
-
-            # Combine APCI and ASDU to form the complete frame
+            # Construct an ASDU with dynamic values (e.g., COT=6 for Activation)
+            asdu = self.construct_asdu(INTERROGATION_CMD, ACT_COT, CASDU, 0)  # Type ID 100, COT 6, CASDU 1, IOA 0
+            
+            # APCI Header (with correct sequence numbers and APDU length)
+            apci = b'\x68\x0e' + \
+                (send_sequence_number << 1).to_bytes(2, byteorder='big') + \
+                (receive_sequence_number << 1).to_bytes(2, byteorder='big')
+            
+            # Send the frame
             frame = apci + asdu
-
-            # Send the frame to the server
             self.sock.send(frame)
             if self.print_debug:
                 print(f"Sent Interrogation Command Frame: {frame.hex()}")
@@ -282,20 +281,13 @@ class IEC104Client:
         """
         asdu = bytearray()
 
-        # Type ID
-        asdu.append(type_id)
+        asdu.append(type_id)  # Type ID
+        asdu.append(0x01)  # Variable Structure Qualifier
+        asdu.append(cot)  # Cause of Transmission
+        asdu.append(0x00) # Part of CASDU
 
-        # Variable Structure Qualifier - 1 information object per message
-        asdu.append(0x01)
-
-        # Cause of Transmission
-        asdu.append(cot)
-
-        # Common Address of ASDU (2 bytes)
-        asdu += casdu.to_bytes(2, byteorder='little')
-
-        # Information Object Address (3 bytes)
-        asdu += ioa.to_bytes(3, byteorder='little')
+        asdu += casdu.to_bytes(2, 'little')  # Common Address of ASDU, correctly encoded
+        asdu += ioa.to_bytes(3, 'little')  # Information Object Address
 
         # Information Elements based on Type ID
         if type_id == SINGLE_CMD:  # Single command
@@ -305,11 +297,12 @@ class IEC104Client:
 
         elif type_id == SET_POINT_CMD:  # Set-point command, short floating point number
             # Assuming 'value' is a floating point number
-            floating_value = struct.pack('>f', value)
+            floating_value = struct.pack('<f', value)
             asdu += floating_value
+            asdu += b'\x80' # QOS
 
         elif type_id == INTERROGATION_CMD:  # Interrogation Command (C_IC_NA_1)
-            pass
+            asdu += b'\x14'  # Station/global interrogation
             # Interrogation command typically doesn't require additional information
             # No additional elements needed for this command
 
@@ -334,7 +327,7 @@ class IEC104Client:
             cot_desc = COT_TABLE.get(cot, f"Unknown COT ({cot})")
 
             # Process the Information Object Address (IOA) - 3 bytes
-            ioa_start = apci_length + 5
+            ioa_start = apci_length + 6
             if len(response) >= ioa_start + 3:
                 ioa = response[ioa_start:ioa_start+3]
                 ioa_value = int.from_bytes(ioa, 'little')
@@ -348,7 +341,7 @@ class IEC104Client:
 
                 elif type_id == FLOAT_INFO and len(response) >= value_start + 4:  # Measured value, short floating point number
                     floating_value_bytes = response[value_start:value_start+4]
-                    measured_value = struct.unpack('>f', floating_value_bytes)[0]
+                    measured_value = struct.unpack('<Sf', floating_value_bytes)[0]
                     measured_value_formatted = f"{measured_value:.2f}"
                     print(f"(IOA {ioa_value}): {measured_value_formatted}  ---  Type: Measured Value (Short Float) --- COT: {cot_desc}")
                 else:

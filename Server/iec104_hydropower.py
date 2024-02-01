@@ -27,15 +27,18 @@ STARTDT_CON_FRAME = b'\x68\x04\x0b\x00\x00\x00'
 STOPDT_ACT_FRAME = b'\x68\x04\x13\x00\x00\x00'
 STOPDT_CON_FRAME = b'\x68\x04\x23\x00\x00\x00'
 
-SINGLE_COMMAND_START = b'\x68\x0e\x00\x00\x00\x00\x2d\x01\x06\x01'
-SET_POINT_START = b'\x68\x0e\x00\x00\x00\x00\x32\x01\x06\x01'
-INTERROGATION_FRAME = b'\x68\x08\x00\x00\x00\x00\x64\x01\x06\x01\x00\x00\x00\x00'
+SINGLE_COMMAND_START = b'\x68\x0e\x00\x00\x00\x00\x2d\x01\x06\x00\x01'
+SET_POINT_START = b'\x68\x12\x00\x00\x00\x00\x32\x01\x06\x00\x01'
+#INTERROGATION_FRAME = b'\x68\x08\x00\x00\x00\x00\x64\x01\x06\x01\x00\x00\x00\x00'
+INTERROGATION_FRAME = b'\x68\x0e\x00\x00\x00\x00\x64\x01\x06\x00\x01\x00\x00\x00\x00\x14'
 
 WATER_INLET = 100 # IOA 100 - BOOL - Water inlet valve to turbine
 EXCITE_SWITCH = 101 # IOA 101 - BOOL - Switch exciting voltage in generator
 TRANSFORMER_SWITCH = 102 # IOA 102 - BOOL - Switch between generator and transformer
 GRID_SWITCH = 103 # IOA 103 - BOOL - Switch between transformer and power grid
 COOLING_SWITCH = 104 # IOA 104 - BOOL - Enable cooling fluid system for bearings, auto-operated if above limit
+START_PROCESS = 105 # IOA 105 - BOOL - Activate startup sequence
+SHUTDOWN_PROCESS = 106 # IOA 106 - BOOL - Activate shutdown sequence
 
 TURBINE_SPEED = 110 # IOA 110 - Float - RPM of turbine
 GENERATOR_VOLTAGE = 111 # IOA 111 - Float - Voltage produced by generator
@@ -47,7 +50,7 @@ MAX_TURBINE_SPEED = 250 # RPM
 PROD_VOLTAGE = 5500 # Volts
 POWER_OUTPUT_CONV = 155.88 # P = V * sqrt(3) * I * cos(phi) = V * sqrt(3) * 100 * 0.9 = V * 155.88
 
-GRID_POWER_ADJUSTMENT_INTERVAL = 10  # 2 minutes in seconds
+GRID_POWER_ADJUSTMENT_INTERVAL = 120  # 2 minutes in seconds
 GRID_POWER_FLUCTUATION = 0.3  # 30% change in demand
 GRID_POWER_MIDPOINT = 870000 # Watt produced midpoint
 ADJUSTMENT_FACTOR = 30 # Used for setting how fast the grid power will change towards target point
@@ -56,6 +59,7 @@ TEMPERATURE_ENV = 15 # 15 degrees celsius assumed for environment
 TEMPERATURE_START_COOLING = 70 # Start cooling system at 70 degrees celsius
 TEMPERATURE_STOP_COOLING = 40 # Stop cooling system at 40 degrees celsius
 COOLING_FACTOR = 0.02
+COOLING_DURATION = 30 # 30 seconds cycles of cooling
 
 class IEC104Server:
     def __init__(self, host, port, debug=False):
@@ -73,18 +77,23 @@ class IEC104Server:
         self.ioa_register[TRANSFORMER_SWITCH] = 0
         self.ioa_register[GRID_SWITCH] = 0
         self.ioa_register[COOLING_SWITCH] = 0
+        self.ioa_register[START_PROCESS] = 0
+        self.ioa_register[SHUTDOWN_PROCESS] = 0
 
         self.ioa_register[TURBINE_SPEED] = 0.0
         self.ioa_register[GENERATOR_VOLTAGE] = 0.0
         self.ioa_register[GRID_POWER] = 0.0
         self.ioa_register[BEARING_TEMP] = TEMPERATURE_ENV
 
-        self.used_bool_ioa.extend([WATER_INLET, EXCITE_SWITCH, TRANSFORMER_SWITCH, GRID_SWITCH, COOLING_SWITCH])
+        self.used_bool_ioa.extend([WATER_INLET, EXCITE_SWITCH, TRANSFORMER_SWITCH, GRID_SWITCH, 
+                                   COOLING_SWITCH, START_PROCESS, SHUTDOWN_PROCESS])
+        
         self.used_float_ioa.extend([TURBINE_SPEED, GENERATOR_VOLTAGE, GRID_POWER, BEARING_TEMP])
 
         self.water_speed = 0.0
         self.grid_power_target = GRID_POWER_MIDPOINT
         self.last_target_update_time = time.time()
+        self.last_cooling_start_time = None
 
         # Sequence numbers
         self.send_sequence_number = 0
@@ -102,6 +111,14 @@ class IEC104Server:
 
     def simulate_data(self):
         while True:
+            if self.ioa_register[START_PROCESS] == 1 and self.ioa_register[SHUTDOWN_PROCESS] == 0:
+                startup_thread = threading.Thread(target=self.start_process_sequence)
+                startup_thread.start()
+
+            if self.ioa_register[SHUTDOWN_PROCESS] == 1 and self.ioa_register[START_PROCESS] == 0:
+                shutdown_thread = threading.Thread(target=self.shutdown_process_sequence)
+                shutdown_thread.start()
+
             self.update_water_speed()
             self.ioa_register[TURBINE_SPEED] = self.calculate_turbine_speed()
             self.ioa_register[GENERATOR_VOLTAGE] = self.update_generator_voltage()
@@ -110,6 +127,29 @@ class IEC104Server:
             self.ioa_register[COOLING_SWITCH] = self.manage_cooling_system()
 
             time.sleep(1)
+
+
+    # Simulated startup process
+    def start_process_sequence(self):
+        self.ioa_register[WATER_INLET] = 1
+        time.sleep(10)
+        self.ioa_register[EXCITE_SWITCH] = 1
+        time.sleep(10)
+        self.ioa_register[TRANSFORMER_SWITCH] = 1
+        self.ioa_register[GRID_SWITCH] = 1
+        self.ioa_register[START_PROCESS] = 0
+
+
+    # Simulated shutdown process
+    def shutdown_process_sequence(self):
+        self.ioa_register[GRID_SWITCH] = 0
+        self.ioa_register[TRANSFORMER_SWITCH] = 0
+        time.sleep(1)
+        self.ioa_register[EXCITE_SWITCH] = 0
+        time.sleep(3)
+        self.ioa_register[WATER_INLET] = 0
+        self.ioa_register[COOLING_SWITCH] = 0
+        self.ioa_register[SHUTDOWN_PROCESS] = 0  # Reset the shutdown process flag
 
     
     def update_water_speed(self):
@@ -123,26 +163,18 @@ class IEC104Server:
             # Decrease water speed but don't let it go below 0
             self.water_speed = max(0, self.water_speed - 0.5)
 
-        # Optionally print the current water speed for debugging
-        if self.debug:
-            print(f"Current water speed: {self.water_speed}")
-
 
     def calculate_turbine_speed(self):
         """
         Calculate turbine speed as a function of water speed.
         """
+        # Turbine speed increases more slowly towards maximum RPM
         if self.water_speed <= 0.80 * MAX_WATER_SPEED:
             turbine_speed = self.water_speed * (MAX_TURBINE_SPEED / MAX_WATER_SPEED)
         else:
             turbine_speed = self.ioa_register[TURBINE_SPEED] + 3
 
-        # Ensure turbine speed does not exceed maximum
         turbine_speed = min(turbine_speed, MAX_TURBINE_SPEED)
-
-        # Optionally print the current turbine speed for debugging
-        if self.debug:
-            print(f"Current turbine speed: {turbine_speed}")
 
         return turbine_speed
 
@@ -162,10 +194,6 @@ class IEC104Server:
             fluctuation = random.uniform(-0.03, 0.03)
             generator_voltage = base_voltage * (1 + fluctuation)
 
-        # Optionally print the current generator voltage for debugging
-        if self.debug:
-            print(f"Current generator voltage: {self.ioa_register[GENERATOR_VOLTAGE]}")
-
         return generator_voltage
 
 
@@ -179,10 +207,8 @@ class IEC104Server:
             self.grid_power_target = GRID_POWER_MIDPOINT + random.uniform(-fluctuation, fluctuation)
             self.last_target_update_time = current_time
 
-            print(f"New target is: {self.grid_power_target}")
-
             if self.debug:
-                print(f"New target is: {self.grid_power_target}")
+                print(f"New grid power target is: {self.grid_power_target}")
 
 
     def update_grid_power(self):
@@ -190,7 +216,7 @@ class IEC104Server:
         Gradually adjust the grid power towards the target based on transformer and grid switches.
         """
         self.update_grid_power_target()
-        # Check if transformer switch or grid switch is off, or low generator voltage
+        # Output is 0 if transformer switch or grid switch is off, or low generator voltage
         if (self.ioa_register[TRANSFORMER_SWITCH] == 0 or 
             self.ioa_register[GRID_SWITCH] == 0 or
             self.ioa_register[GENERATOR_VOLTAGE] < PROD_VOLTAGE * 0.8):
@@ -207,11 +233,6 @@ class IEC104Server:
                 adjustment_step = power_difference / ADJUSTMENT_FACTOR
                 grid_power = self.ioa_register[GRID_POWER] + adjustment_step
 
-        print(f"Grid power adjusted to: {grid_power}")
-        # Optionally print the current grid power for debugging
-        if self.debug:
-            print(f"Grid power adjusted to: {grid_power}")
-
         return grid_power
 
 
@@ -221,7 +242,7 @@ class IEC104Server:
         """
         # Let bearing temp increase faster if the grid load is high
         grid_load_factor = (self.ioa_register[GRID_POWER] / GRID_POWER_MIDPOINT)
-        grid_load = grid_load_factor * grid_load_factor
+        grid_load = 0.5 + (grid_load_factor * grid_load_factor)
         
         if self.ioa_register[TURBINE_SPEED] > 0:
         # Calculate the increment rate based on turbine speed
@@ -237,25 +258,28 @@ class IEC104Server:
             decrease_amount = self.ioa_register[BEARING_TEMP] * COOLING_FACTOR
             bearing_temp = max(self.ioa_register[BEARING_TEMP] - decrease_amount, TEMPERATURE_ENV)
 
-        print(f"Current bearing temperature: {self.ioa_register[BEARING_TEMP]}")
-        # Optionally print the current bearing temperature for debugging
-        if self.debug:
-            print(f"Current bearing temperature: {self.ioa_register[BEARING_TEMP]}")
-
         return bearing_temp
 
 
     def manage_cooling_system(self):
         """
-        Automatically manage the cooling system based on bearing temperature.
+        Automatically manage the cooling system based on bearing temperature and timer
         """
-        enable_cooling = self.ioa_register[COOLING_SWITCH]
+        current_time = time.time()
+        if self.last_cooling_start_time:
+            cooling_active_duration = current_time - self.last_cooling_start_time
+        else:
+            cooling_active_duration = 0
+
         if self.ioa_register[BEARING_TEMP] > TEMPERATURE_START_COOLING:
-            # Activate cooling system if bearing temperature is above 70
-            enable_cooling = 1
-        if self.ioa_register[BEARING_TEMP] < TEMPERATURE_STOP_COOLING:
-            # Deactivate cooling system if bearing temperature is below 40
+            if not self.last_cooling_start_time or cooling_active_duration >= COOLING_DURATION:
+                self.last_cooling_start_time = current_time
+                enable_cooling = 1
+        elif cooling_active_duration > COOLING_DURATION:
             enable_cooling = 0
+            self.last_cooling_start_time = None
+        else:
+            enable_cooling = self.ioa_register[COOLING_SWITCH]
 
         return enable_cooling
 
@@ -323,21 +347,22 @@ class IEC104Server:
         if self.debug:
             print("Received Interrogation Command, sending responses")
 
-        # Send Type 1 responses
-        for i in range(1, 9):
-            asdu = self.construct_asdu(SINGLE_INFO, 6, 1, 110, self.ioa_register[110])
-            self.send_asdu_response(conn, asdu)
+        # Send Type 1 bool responses
+        for ioa in self.used_bool_ioa:
+            asdu = self.construct_asdu(SINGLE_INFO, ACT_COT, CASDU, ioa, self.ioa_register[ioa])
+            self.send_asdu_response(conn, asdu, SINGLE_INFO)
             time.sleep(DELAY_TIME)
 
-        for i in range(1, 5):
-            asdu = self.construct_asdu(FLOAT_INFO, 6, 1, 100, self.ioa_register[100])
-            self.send_asdu_response(conn, asdu)
+        # Send Type 13 float responses
+        for ioa in self.used_float_ioa:
+            asdu = self.construct_asdu(FLOAT_INFO, ACT_COT, CASDU, ioa, self.ioa_register[ioa])
+            self.send_asdu_response(conn, asdu, FLOAT_INFO)
             time.sleep(DELAY_TIME)
         
 
     def handle_single_command(self, request, conn):
-        # Assuming the IOA starts at byte 10 (6 bytes APCI + 4 bytes ASDU header)
-        ioa_index = 10
+        # Assuming the IOA starts at byte 11 (6 bytes APCI + 5 bytes ASDU header)
+        ioa_index = 11
         # Extract IOA (2 bytes, with an optional 3rd byte)
         ioa_msb = request[ioa_index]  # Most Significant Byte
         ioa_lsb = request[ioa_index + 1]  # Least Significant Byte
@@ -357,16 +382,16 @@ class IEC104Server:
 
             # Construct and send response ASDU
             response_asdu = self.construct_asdu(SINGLE_CMD, ACT_CONF_COT, CASDU, ioa, command_value)
-            self.send_asdu_response(conn, response_asdu)
+            self.send_asdu_response(conn, response_asdu, SINGLE_CMD)
         else:
             print("Index out of range for command value extraction")
             response_asdu = self.construct_asdu(SINGLE_CMD, IOA_ERROR_COT, CASDU, ioa, command_value)
-            self.send_asdu_response(conn, response_asdu)
+            self.send_asdu_response(conn, response_asdu, SINGLE_CMD)
 
 
     def handle_setpoint_command(self, request, conn):
-        # Assuming the IOA starts at byte 10 (6 bytes APCI + 4 bytes ASDU header)
-        ioa_index = 10
+        # Assuming the IOA starts at byte 11 (6 bytes APCI + 5 bytes ASDU header)
+        ioa_index = 11
 
         # Extract IOA (2 bytes, with an optional 3rd byte)
         ioa_msb = request[ioa_index]  # Most Significant Byte
@@ -385,26 +410,30 @@ class IEC104Server:
             print("Extracted setpoint value bytes: " + setpoint_value_bytes.hex())
 
             # Use struct.unpack with the correct format specifier for big-endian 32-bit float
-            setpoint_value = struct.unpack('>f', setpoint_value_bytes)[0]
+            setpoint_value = struct.unpack('<f', setpoint_value_bytes)[0]
             print(f"Handling setpoint command --- IOA: {ioa}, Value: {setpoint_value}")
             self.ioa_register[ioa] = setpoint_value
 
             # Construct and send response ASDU
             response_asdu = self.construct_asdu(SET_POINT_CMD, ACT_CONF_COT, CASDU, ioa, setpoint_value)
-            self.send_asdu_response(conn, response_asdu)
+            self.send_asdu_response(conn, response_asdu, SET_POINT_CMD)
         else:
             print("Index out of range for setpoint value extraction")
             response_asdu = self.construct_asdu(SET_POINT_CMD, IOA_ERROR_COT, CASDU, ioa, None)
-            self.send_asdu_response(conn, response_asdu)
+            self.send_asdu_response(conn, response_asdu, SET_POINT_CMD)
 
 
-    def send_asdu_response(self, conn, asdu):
+    def send_asdu_response(self, conn, asdu, type_id):
             """
             Send an ASDU response to the client.
             """
             send_sequence_number = (self.send_sequence_number << 1).to_bytes(2, byteorder='big')
             receive_sequence_number = (self.receive_sequence_number << 1).to_bytes(2, byteorder='big')
-            apci = b'\x68\x0E' + send_sequence_number + receive_sequence_number
+            if type_id == SET_POINT_CMD:
+                apci = b'\x68\x12' + send_sequence_number + receive_sequence_number
+            else:
+                apci = b'\x68\x0e' + send_sequence_number + receive_sequence_number
+
             response = apci + asdu
             conn.sendall(response)
             if self.debug:
@@ -435,6 +464,9 @@ class IEC104Server:
         # Cause of Transmission
         asdu.append(cot)
 
+        # Pre-CASDU
+        asdu.append(0x00)
+
         # Common Address of ASDU (assuming 2 bytes)
         asdu += casdu.to_bytes(2, byteorder='little')
 
@@ -449,7 +481,7 @@ class IEC104Server:
 
         elif type_id == FLOAT_INFO:
             # Convert the float value to IEEE 754 format (4 bytes)
-            floating_value = struct.pack('>f', value)
+            floating_value = struct.pack('<f', value)
             asdu += floating_value
 
         if type_id == SINGLE_CMD:
@@ -459,8 +491,9 @@ class IEC104Server:
 
         elif type_id == SET_POINT_CMD:
             # Convert the float value to IEEE 754 format (4 bytes)
-            floating_value = struct.pack('>f', value)
+            floating_value = struct.pack('<f', value)
             asdu += floating_value
+            asdu += b'\x80' # QOS
 
         return asdu
 
