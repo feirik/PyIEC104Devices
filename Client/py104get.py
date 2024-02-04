@@ -30,6 +30,8 @@ ACT_CONF_COT = 7 # Activation confirmation
 IOA_ERROR_COT = 47 # Unknown IOA
 CASDU = 1 # Using CASDU address 1
 
+COT_OFFSET = 10
+
 # Cause of Transmission (COT) values
 COT_TABLE = {
     1: "Periodic, cyclic",
@@ -103,7 +105,8 @@ class IEC104Client:
 
             # Connect to the server
             self.sock.connect((self.server, self.port))
-            print(f"Connected to {self.server} on port {self.port}")
+            if self.print_debug:
+                print(f"Connected to {self.server} on port {self.port}")
 
             if self.sock:
                 self.start_data_transfer()  # Start data transfer after connecting
@@ -152,7 +155,8 @@ class IEC104Client:
         if self.sock:
             self.sock.close()
             self.sock = None
-            print(f"Disconnected from {self.server}")
+            if self.print_debug:
+                print(f"Disconnected from {self.server}")
 
 
     def send(self, type_id, cot, casdu, ioa, value):
@@ -167,7 +171,6 @@ class IEC104Client:
         """
         if self.sock:
             try:
-                print(type_id)
                 # Construct the APCI header
                 if type_id == SINGLE_CMD:
                     start_bytes = b'\x68\x0E'
@@ -199,19 +202,16 @@ class IEC104Client:
         Dynamically construct and send an Interrogation Command to the IEC 104 server.
         """
         try:
-            # Assuming these are tracked or initialized elsewhere
-            send_sequence_number = 0x00  # Increment as needed
-            receive_sequence_number = 0x00  # Update based on communication
+            # Assume client sends first message
+            send_sequence_number = 0x00
+            receive_sequence_number = 0x00
             
-            # Construct an ASDU with dynamic values (e.g., COT=6 for Activation)
-            asdu = self.construct_asdu(INTERROGATION_CMD, ACT_COT, CASDU, 0)  # Type ID 100, COT 6, CASDU 1, IOA 0
+            asdu = self.construct_asdu(INTERROGATION_CMD, ACT_COT, CASDU, 0)
             
-            # APCI Header (with correct sequence numbers and APDU length)
             apci = b'\x68\x0e' + \
                 (send_sequence_number << 1).to_bytes(2, byteorder='big') + \
                 (receive_sequence_number << 1).to_bytes(2, byteorder='big')
             
-            # Send the frame
             frame = apci + asdu
             self.sock.send(frame)
             if self.print_debug:
@@ -227,7 +227,7 @@ class IEC104Client:
         """
         if self.sock:
             try:
-                response = self.sock.recv(1024)  # Buffer size can be adjusted
+                response = self.sock.recv(1024)
                 if response:
                     if self.print_debug:
                         print(f"Received: {response.hex()}")
@@ -252,17 +252,17 @@ class IEC104Client:
         while time.time() - start_time < timeout:
             try:
                 self.sock.settimeout(timeout - (time.time() - start_time))
-                response = self.sock.recv(1024)  # Buffer size can be adjusted
+                response = self.sock.recv(1024)
 
                 if response:
                     if self.print_debug:
                         print(f"Received: {response.hex()}")
                     messages.append(response)
                 else:
-                    break  # Break if an empty response is received
+                    break
 
             except socket.timeout:
-                break  # Break if the timeout is reached
+                break
 
         return messages
 
@@ -280,30 +280,25 @@ class IEC104Client:
         """
         asdu = bytearray()
 
-        asdu.append(type_id)  # Type ID
-        asdu.append(0x01)  # Variable Structure Qualifier
-        asdu.append(cot)  # Cause of Transmission
+        asdu.append(type_id)
+        asdu.append(0x01)
+        asdu.append(cot)
         asdu.append(0x00) # Part of CASDU
 
-        asdu += casdu.to_bytes(2, 'little')  # Common Address of ASDU, correctly encoded
-        asdu += ioa.to_bytes(3, 'little')  # Information Object Address
+        asdu += casdu.to_bytes(2, 'little')
+        asdu += ioa.to_bytes(3, 'little') 
 
-        # Information Elements based on Type ID
-        if type_id == SINGLE_CMD:  # Single command
-            # Assuming 'value' is a boolean for ON/OFF command
+        if type_id == SINGLE_CMD:
             command_value = 0x01 if value else 0x00
             asdu.append(command_value)
 
-        elif type_id == SET_POINT_CMD:  # Set-point command, short floating point number
-            # Assuming 'value' is a floating point number
+        elif type_id == SET_POINT_CMD:
             floating_value = struct.pack('<f', value)
             asdu += floating_value
-            asdu += b'\x80' # QOS
+            asdu += b'\x80'
 
-        elif type_id == INTERROGATION_CMD:  # Interrogation Command (C_IC_NA_1)
+        elif type_id == INTERROGATION_CMD:
             asdu += b'\x14'  # Station/global interrogation
-            # Interrogation command typically doesn't require additional information
-            # No additional elements needed for this command
 
         return asdu
 
@@ -331,18 +326,25 @@ class IEC104Client:
                 ioa = response[ioa_start:ioa_start+3]
                 ioa_value = int.from_bytes(ioa, 'little')
 
-                # Process Value based on Type ID
-                value_start = ioa_start + 3
-                if type_id == SINGLE_INFO and len(response) >= value_start + 1:  # Single-point information
-                    status = response[value_start]
-                    status_str = f"{status}".rjust(6)
-                    print(f"(IOA {ioa_value}): {status_str}  ---  Type: Single point  ---  COT: {cot_desc}")
+                # Define maximum width for printing alignment
+                max_width = 10
 
-                elif type_id == FLOAT_INFO and len(response) >= value_start + 4:  # Measured value, short floating point number
+                value_start = ioa_start + 3
+                if type_id == SINGLE_INFO and len(response) >= value_start + 1:
+                    status = response[value_start]
+                    status_str = f"{status}".rjust(max_width)
+                    if self.print_debug:
+                        print(f"(IOA {ioa_value:3}): {status_str:<{max_width}}   ---   Type: Single point  ---   COT: {cot_desc}")
+                    else:
+                        print(f"(IOA {ioa_value:3}): {status_str:<{max_width}}")
+                elif type_id == FLOAT_INFO and len(response) >= value_start + 4:
                     floating_value_bytes = response[value_start:value_start+4]
-                    measured_value = struct.unpack('<Sf', floating_value_bytes)[0]
-                    measured_value_formatted = f"{measured_value:.2f}"
-                    print(f"(IOA {ioa_value}): {measured_value_formatted}  ---  Type: Measured Value (Short Float) --- COT: {cot_desc}")
+                    measured_value = struct.unpack('<f', floating_value_bytes)[0]
+                    measured_value_formatted = f"{measured_value:>{max_width}.2f}"
+                    if self.print_debug:
+                        print(f"(IOA {ioa_value:3}): {measured_value_formatted}   ---   Type: Measured Value (Short Float)   ---   COT: {cot_desc}")
+                    else:
+                        print(f"(IOA {ioa_value:3}): {measured_value_formatted}")
                 else:
                     print("Not enough data for value")
                     success = False
@@ -353,17 +355,22 @@ class IEC104Client:
         return success
 
     
-    def process_cot(self, response):
+    def process_cot(self, command, response):
         """
         Process the Cause of Transmission (COT) from the received response using COT_TABLE.
         """
         # Assuming COT is in a specific position in the response
-        if response and len(response) >= 10:
+        if response and len(response) >= COT_OFFSET:
             cot = response[8]
             cot_desc = COT_TABLE.get(cot, f"Unknown COT ({cot})")
 
             if cot == ACT_CONF_COT:
-                print(f"Server successfully processed (COT: 7 - {cot_desc}).")
+                if command == SET_POINT_CMD:
+                    print("Set point command (float) successfully processed by server.")
+                elif command == SINGLE_CMD:
+                    print("Single command (bool) successfully processed by server.")
+                else:
+                    print(f"Server successfully processed (COT: 7 - {cot_desc}).")
             elif cot == IOA_ERROR_COT:
                 print(f"Command failed (COT: 47 - {cot_desc}).")
             else:
@@ -418,9 +425,9 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--port', metavar='port_number', type=check_port_number, help='set TCP port (default 2404)', default=IEC104_PORT)
     parser.add_argument('-t', '--timeout', metavar='timeout', type=check_timeout, help='set timeout seconds (default is 5s)', default=5)
 
-    # IEC 104 specific commands for supported operations
-    parser.add_argument('-w45','--single-command', metavar='ioa_value', help='send single bool command (C_SC_NA_1) with Information Object Address and value')
-    parser.add_argument('-w50','--setpoint-command', metavar='ioa_value', help='send setpoint command (C_SE_NA_1) with Information Object Address and value')
+    # IEC 104 specific commands
+    parser.add_argument('-w45','--single-command', metavar='ioa_value', help='Format: IOA,value - send single bool command (C_SC_NA_1)')
+    parser.add_argument('-w50','--setpoint-command', metavar='ioa_value', help='Format: IOA,value - send setpoint command (C_SE_NA_1)')
     parser.add_argument('-r100', '--request-data', action='store_true', help='request data for all information objects (General Interrogation)')
 
     args = parser.parse_args()
@@ -446,27 +453,29 @@ if __name__ == '__main__':
     try:
         if args.single_command:
             ioa, value = map(int, args.single_command.split(','))
-            client.send(SINGLE_CMD, ACT_COT, CASDU, ioa, value)  # Sending a single command
-            response = client.receive()  # Receiving the response
+            client.send(SINGLE_CMD, ACT_COT, CASDU, ioa, value)
+            response = client.receive()
             if response:
-                client.process_cot(response)  # Process the COT from the response
+                # Process the COT from the response to check if command was accepted
+                client.process_cot(SINGLE_CMD, response)
             else:
                 print("No valid response received.")
 
         if args.setpoint_command:
             ioa, value = args.setpoint_command.split(',')
             ioa = int(ioa)
-            value = float(value)  # Convert the value to a float
-            client.send(SET_POINT_CMD, ACT_COT, CASDU, ioa, value)  # Sending a setpoint command
-            response = client.receive()  # Receiving the response
+            value = float(value)
+            client.send(SET_POINT_CMD, ACT_COT, CASDU, ioa, value)
+            response = client.receive()
             if response:
-                client.process_cot(response)  # Process the COT from the response
+                client.process_cot(SET_POINT_CMD, response)
             else:
                 print("No valid response received.")
 
         if args.request_data:
             client.send_interrogation_command()
-            responses = client.receive_multiple()  # Receive multiple responses within a timeout
+            # Receive multiple responses within a timeout
+            responses = client.receive_multiple()
             for response in responses:
                 client.decode_iec104_response(response)
 

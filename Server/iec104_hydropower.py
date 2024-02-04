@@ -428,7 +428,7 @@ class IEC104Server:
             """
             send_sequence_number = (self.send_sequence_number << 1).to_bytes(2, byteorder='big')
             receive_sequence_number = (self.receive_sequence_number << 1).to_bytes(2, byteorder='big')
-            if type_id == SET_POINT_CMD:
+            if type_id == SET_POINT_CMD or type_id == FLOAT_INFO:
                 apci = b'\x68\x12' + send_sequence_number + receive_sequence_number
             else:
                 apci = b'\x68\x0e' + send_sequence_number + receive_sequence_number
@@ -473,7 +473,7 @@ class IEC104Server:
         asdu += ioa.to_bytes(3, byteorder='little')
 
         # Information Elements based on Type ID
-        if type_id == 1:  # Single-point information
+        if type_id == SINGLE_INFO:
             # Assuming 'value' is a boolean for ON/OFF status
             status_value = 0x01 if value else 0x00
             asdu.append(status_value)
@@ -482,6 +482,7 @@ class IEC104Server:
             # Convert the float value to IEEE 754 format (4 bytes)
             floating_value = struct.pack('<f', value)
             asdu += floating_value
+            asdu += b'\x00' # QDS
 
         if type_id == SINGLE_CMD:
             # Include the command value
@@ -492,7 +493,7 @@ class IEC104Server:
             # Convert the float value to IEEE 754 format (4 bytes)
             floating_value = struct.pack('<f', value)
             asdu += floating_value
-            asdu += b'\x80' # QOS
+            asdu += b'\x80' # QDS
 
         return asdu
 
