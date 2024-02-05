@@ -3,11 +3,11 @@
 from .py104get import IEC104Client
 
 class IEC104ClientAPI:
-    def __init__(self, ip_address, port=2404, timeout=5, print_debug=False):
+    def __init__(self, ip_address, port=2404, timeout=5):
         """
         Initialize the IEC104Client and establish a connection to the server.
         """
-        self.client = IEC104Client(ip_address, port, timeout, print_debug)
+        self.client = IEC104Client(ip_address, port, timeout, False)
         self.client.connect()
 
 
@@ -56,12 +56,11 @@ class IEC104ClientAPI:
         self.client.close()
 
 
+# Unit tests of API
 if __name__ == "__main__":
-
     ip_address = "127.0.0.1"
     port = 2404
     timeout = 5
-    print_debug = False
 
     # Initialize flags for each test
     write_single_success = False
@@ -70,7 +69,7 @@ if __name__ == "__main__":
     read_success = True  # Assume reading success until proven otherwise
 
     # Initialize the IEC104 client API with the provided parameters
-    client = IEC104ClientAPI(ip_address, port, timeout, print_debug)
+    client = IEC104ClientAPI(ip_address, port, timeout)
 
     # Write a single command to IOA 105 with value 1 (ON)
     if client.write_single_command(105, 1):
