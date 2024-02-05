@@ -6,7 +6,7 @@ import random
 import time
 
 IEC104_PORT = 2404
-DELAY_TIME = 0.03
+DELAY_TIME = 0.05
 
 IOA_SIZE = 65536
 
