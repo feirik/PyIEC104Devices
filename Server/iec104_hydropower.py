@@ -6,7 +6,7 @@ import random
 import time
 
 IEC104_PORT = 2404
-DELAY_TIME = 0.05
+DELAY_TIME = 0.03
 
 IOA_SIZE = 65536
 
@@ -43,6 +43,7 @@ TURBINE_SPEED = 110 # IOA 110 - Float - RPM of turbine
 GENERATOR_VOLTAGE = 111 # IOA 111 - Float - Voltage produced by generator
 GRID_POWER = 112 # IOA 112 - Estimated kW produced, demand will fluctuate
 BEARING_TEMP = 113 # IOA 113 - Bearing temp
+FLOAT_TEST = 120 # IOA 120 - Testing float write and read
 
 MAX_WATER_SPEED = 5 # m3/s
 MAX_TURBINE_SPEED = 250 # RPM
@@ -87,7 +88,7 @@ class IEC104Server:
         self.used_bool_ioa.extend([WATER_INLET, EXCITE_SWITCH, TRANSFORMER_SWITCH, GRID_SWITCH, 
                                    COOLING_SWITCH, START_PROCESS, SHUTDOWN_PROCESS])
         
-        self.used_float_ioa.extend([TURBINE_SPEED, GENERATOR_VOLTAGE, GRID_POWER, BEARING_TEMP])
+        self.used_float_ioa.extend([TURBINE_SPEED, GENERATOR_VOLTAGE, GRID_POWER, BEARING_TEMP, FLOAT_TEST])
 
         self.water_speed = 0.0
         self.grid_power_target = GRID_POWER_MIDPOINT
@@ -369,7 +370,6 @@ class IEC104Server:
         # Convert IOA bytes to integer (little endian)
         ioa_bytes = bytes([ioa_lsb, ioa_msb])
         ioa = int.from_bytes(ioa_bytes, 'little')
-        print(f"Extracted IOA bytes: {ioa_bytes.hex()} --> IOA: {ioa}")
 
         # The command value and qualifier are after the IOA
         command_value_index = ioa_index + 3
@@ -399,14 +399,12 @@ class IEC104Server:
         # Convert IOA bytes to integer (little endian)
         ioa_bytes = bytes([ioa_lsb, ioa_msb])
         ioa = int.from_bytes(ioa_bytes, 'little')
-        print(f"Extracted IOA bytes: {ioa_bytes.hex()} --> IOA: {ioa}")
 
         # The setpoint value starts 3 bytes after the IOA index
         setpoint_value_index = ioa_index + 4
         if setpoint_value_index + 4 <= len(request):
             # Extract setpoint value (4 bytes, IEEE 754 format)
             setpoint_value_bytes = request[setpoint_value_index:setpoint_value_index + 4]
-            print("Extracted setpoint value bytes: " + setpoint_value_bytes.hex())
 
             # Use struct.unpack with the correct format specifier for big-endian 32-bit float
             setpoint_value = struct.unpack('<f', setpoint_value_bytes)[0]

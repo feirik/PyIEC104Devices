@@ -12,7 +12,7 @@ DEFAULT_TIMEOUT = 5
 MAX_TIMEOUT = 120
 HEX_BASE = 16
 
-DELAY_TIME=0.05
+DELAY_TIME=0.03
 
 STARTDT_ACT_FRAME = b'\x68\x04\x07\x00\x00\x00'
 STARTDT_CON_FRAME = b'\x68\x04\x0b\x00\x00\x00'
@@ -143,7 +143,6 @@ class IEC104Client:
                 print(f"Error sending STOPDT ACT: {e}")
 
         return success
-
 
 
     def close(self):
@@ -305,6 +304,8 @@ class IEC104Client:
     
     def decode_iec104_response(self, response):
         success = True
+        ioa_value = None
+        return_value = None
 
         if len(response) < 13:
             print("ERROR - Response from server too short to decode")
@@ -332,6 +333,7 @@ class IEC104Client:
                 value_start = ioa_start + 3
                 if type_id == SINGLE_INFO and len(response) >= value_start + 1:
                     status = response[value_start]
+                    return_value = status
                     status_str = f"{status}".rjust(max_width)
                     if self.print_debug:
                         print(f"(IOA {ioa_value:3}): {status_str:<{max_width}}   ---   Type: Single point  ---   COT: {cot_desc}")
@@ -340,6 +342,7 @@ class IEC104Client:
                 elif type_id == FLOAT_INFO and len(response) >= value_start + 4:
                     floating_value_bytes = response[value_start:value_start+4]
                     measured_value = struct.unpack('<f', floating_value_bytes)[0]
+                    return_value = measured_value
                     measured_value_formatted = f"{measured_value:>{max_width}.2f}"
                     if self.print_debug:
                         print(f"(IOA {ioa_value:3}): {measured_value_formatted}   ---   Type: Measured Value (Short Float)   ---   COT: {cot_desc}")
@@ -352,13 +355,14 @@ class IEC104Client:
                 print("Not enough data for IOA")
                 success = False
 
-        return success
+        return success, ioa_value, return_value
 
     
     def process_cot(self, command, response):
         """
         Process the Cause of Transmission (COT) from the received response using COT_TABLE.
         """
+        success = False
         # Assuming COT is in a specific position in the response
         if response and len(response) >= COT_OFFSET:
             cot = response[8]
@@ -367,16 +371,93 @@ class IEC104Client:
             if cot == ACT_CONF_COT:
                 if command == SET_POINT_CMD:
                     print("Set point command (float) successfully processed by server.")
+                    success = True
                 elif command == SINGLE_CMD:
                     print("Single command (bool) successfully processed by server.")
+                    success = True
                 else:
                     print(f"Server successfully processed (COT: 7 - {cot_desc}).")
+                    success = True
             elif cot == IOA_ERROR_COT:
                 print(f"Command failed (COT: 47 - {cot_desc}).")
             else:
                 print(f"ERROR - Received unexpected COT: {cot}, {cot_desc}.")
         else:
             print("Invalid or too short response to process COT.")
+
+        return success
+
+
+    def api_single_command(self, ioa, value):
+        """
+        Send a single command to the IEC 104 server and check for successful processing.
+
+        :param ioa: Information Object Address of the command.
+        :param value: The boolean value to be sent (True or False).
+        :return: True if the command was successfully processed, False otherwise.
+        """
+        success = False
+        self.send(SINGLE_CMD, ACT_COT, CASDU, ioa, value)
+        response = self.receive()
+
+        if not response:
+            print("No valid response received.")
+
+        success = self.process_cot(SINGLE_CMD, response)
+
+        return success
+
+
+    def api_setpoint_command(self, ioa, value):
+        """
+        Send a setpoint command to the IEC 104 server and check for successful processing.
+
+        :param ioa: Information Object Address of the command.
+        :param value: The floating-point setpoint value to be sent.
+        :return: True if the command was successfully processed, False otherwise.
+        """
+        success = False
+        try:
+            value = float(value)
+        except ValueError:
+            print(f"Invalid setpoint value: {value}. Must be a floating-point number.")
+            return False
+
+        self.send(SET_POINT_CMD, ACT_COT, CASDU, ioa, value)
+        response = self.receive()
+        if not response:
+            print("No valid response received.")
+
+        success = self.process_cot(SET_POINT_CMD, response)
+
+        return success
+
+
+    def api_request_data(self):
+        """
+        Request data for all information objects from the server and process the responses.
+
+        :return: A tuple containing a boolean indicating overall success, and a dictionary with IOA numbers as keys
+                 and their corresponding values if successful, None otherwise.
+        """
+        overall_success = True
+        data = {}
+
+        self.send_interrogation_command()
+        responses = self.receive_multiple()
+
+        if not responses:
+            print("No responses received.")
+            return False, None
+
+        for response in responses:
+            success, ioa, value = self.decode_iec104_response(response)
+            if success:
+                data[ioa] = value
+            else:
+                overall_success = False
+
+        return overall_success, data
 
 
 def check_port_number(value):
