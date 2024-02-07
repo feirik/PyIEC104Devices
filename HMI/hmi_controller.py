@@ -84,16 +84,6 @@ class HMIController:
         self.view.master.protocol("WM_DELETE_WINDOW", self.on_closing)
 
 
-    def set_default_view(self, event=None):
-        self.graph.set_view_type('default')
-
-    def set_low_view(self, event=None):
-        self.graph.set_view_type('low')
-
-    def set_high_view(self, event=None):
-        self.graph.set_view_type('high')
-
-
     def write_bool(self, addr, value):
         client = IEC104ClientAPI(self.host, self.port, self.timeout)
         result = client.write_single_command(addr, value)
@@ -123,20 +113,19 @@ class HMIController:
             self.view.after_cancel(self._after_id)
 
         try:
-            # TODO, use new functions
-
             data = self.read_values()
 
             if data:
                 generator_voltage = data[GENERATOR_VOLTAGE]
                 grid_power = data[GRID_POWER]
                 bearing_temperature = data[BEARING_TEMP]
+                turbine_speed = data[TURBINE_SPEED]
 
                 self.graph.update_graph(generator_voltage, grid_power)
                 self.data = data
 
-                # TODO fix limits if needed
-                self.dynamic_bar.set_value(0, 120, round(bearing_temperature, 1))
+                self.dynamic_bar.update_bars(round(bearing_temperature, 1), turbine_speed, 
+                                             round(generator_voltage, 1), round(grid_power, 1))
             
 
             # Pass in data instead
