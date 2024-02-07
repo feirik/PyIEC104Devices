@@ -48,11 +48,11 @@ FLOAT_TEST = 120 # IOA 120 - Testing float write and read
 MAX_WATER_SPEED = 5 # m3/s
 MAX_TURBINE_SPEED = 250 # RPM
 PROD_VOLTAGE = 5500 # Volts
-POWER_OUTPUT_CONV = 155.88 # P = V * sqrt(3) * I * cos(phi) = V * sqrt(3) * 100 * 0.9 = V * 155.88
+POWER_OUTPUT_CONV = 0.234 # P (kW) = V * sqrt(3) * I * cos(phi) / kW conv = V * sqrt(3) * 150 * 0.9 / 1000 = V * 0.234
 
 GRID_POWER_ADJUSTMENT_INTERVAL = 120  # 2 minutes in seconds
-GRID_POWER_FLUCTUATION = 0.3  # 30% change in demand
-GRID_POWER_MIDPOINT = 870000 # Watt produced midpoint
+GRID_POWER_FLUCTUATION = 0.4  # 30% change in demand
+GRID_POWER_MIDPOINT = 1305 # kW produced midpoint
 ADJUSTMENT_FACTOR = 30 # Used for setting how fast the grid power will change towards target point
 
 TEMPERATURE_ENV = 15 # 15 degrees celsius assumed for environment
