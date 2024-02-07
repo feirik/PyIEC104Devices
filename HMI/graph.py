@@ -58,7 +58,7 @@ class GraphView:
         self.ax.set_facecolor(HPHMI.gray)
         
         # Set consistent intervals for the X and Y axes
-        self.ax.set_xlim(0, 300)  # Fixed at 300 seconds
+        self.ax.set_xlim(0, 300)  # Fixed at readings
         self.ax.set_ylim(Y_MIN, Y_MAX)
 
         self.ax.set_xticks([0, 60, 120, 180, 240, 300])
@@ -95,18 +95,18 @@ class GraphView:
 
         # Outline bar for gen_voltage
         voltage_gen_outline = self.create_rectangle(BAR_OUTLINES['gen_voltage']['x'], 
-                                                   BAR_OUTLINES['gen_voltage']['y'], 
-                                                   BAR_OUTLINES['gen_voltage']['width'], 
-                                                   BAR_OUTLINES['gen_voltage']['height'], 
-                                                   HPHMI.gray, HPHMI.dark_gray, 1)
+                                                    BAR_OUTLINES['gen_voltage']['y'], 
+                                                    BAR_OUTLINES['gen_voltage']['width'], 
+                                                    BAR_OUTLINES['gen_voltage']['height'], 
+                                                    HPHMI.gray, HPHMI.dark_gray, 1)
 
         
         # Outline bar for grid_power
         grid_power_outline = self.create_rectangle(BAR_OUTLINES['grid_power']['x'], 
-                                                    BAR_OUTLINES['grid_power']['y'], 
-                                                    BAR_OUTLINES['grid_power']['width'], 
-                                                    BAR_OUTLINES['grid_power']['height'], 
-                                                    HPHMI.gray, HPHMI.dark_gray, 1)
+                                                   BAR_OUTLINES['grid_power']['y'], 
+                                                   BAR_OUTLINES['grid_power']['width'], 
+                                                   BAR_OUTLINES['grid_power']['height'], 
+                                                   HPHMI.gray, HPHMI.dark_gray, 1)
 
         self.fig.patches.extend([voltage_gen_outline, grid_power_outline])
 
@@ -231,10 +231,10 @@ class GraphView:
 
         # Outline bar for gen_voltage
         voltage_gen_outline = self.create_rectangle(BAR_OUTLINES['gen_voltage']['x'], 
-                                                BAR_OUTLINES['gen_voltage']['y'], 
-                                                BAR_OUTLINES['gen_voltage']['width'], 
-                                                BAR_OUTLINES['gen_voltage']['height'], 
-                                                HPHMI.gray, HPHMI.dark_gray, 1)
+                                                    BAR_OUTLINES['gen_voltage']['y'], 
+                                                    BAR_OUTLINES['gen_voltage']['width'], 
+                                                    BAR_OUTLINES['gen_voltage']['height'], 
+                                                    HPHMI.gray, HPHMI.dark_gray, 1)
 
         # Inner bar representing the input voltage data range
         voltage_gen_bar = self.create_rectangle(BAR_OUTLINES['gen_voltage']['x'], 
@@ -245,10 +245,10 @@ class GraphView:
 
         # Outline bar for grid_power
         grid_power_outline = self.create_rectangle(BAR_OUTLINES['grid_power']['x'], 
-                                                    BAR_OUTLINES['grid_power']['y'], 
-                                                    BAR_OUTLINES['grid_power']['width'], 
-                                                    BAR_OUTLINES['grid_power']['height'], 
-                                                    HPHMI.gray, HPHMI.dark_gray, 1)
+                                                   BAR_OUTLINES['grid_power']['y'], 
+                                                   BAR_OUTLINES['grid_power']['width'], 
+                                                   BAR_OUTLINES['grid_power']['height'], 
+                                                   HPHMI.gray, HPHMI.dark_gray, 1)
 
         # Inner bar representing the output voltage data range
         grid_power_bar = self.create_rectangle(BAR_OUTLINES['grid_power']['x'], 
@@ -260,7 +260,7 @@ class GraphView:
         self.fig.patches.extend([voltage_gen_outline, voltage_gen_bar, grid_power_outline, grid_power_bar])
 
         # Set the axes labels and grid
-        self.ax.set_xlim(0, 300)  # Fixed at 300 seconds
+        self.ax.set_xlim(0, 300)  # Fixed at 300 readings
         self.ax.set_ylim(Y_MIN, Y_MAX)
         self.ax.grid(color=HPHMI.dark_gray, linestyle='--', linewidth=0.5, alpha=1)
         self.fig.tight_layout()
