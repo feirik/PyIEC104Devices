@@ -132,9 +132,9 @@ class IEC104Server:
     # Simulated startup process
     def start_process_sequence(self):
         self.ioa_register[WATER_INLET] = 1
-        time.sleep(10)
+        time.sleep(15)
         self.ioa_register[EXCITE_SWITCH] = 1
-        time.sleep(10)
+        time.sleep(25)
         self.ioa_register[TRANSFORMER_SWITCH] = 1
         self.ioa_register[GRID_SWITCH] = 1
         self.ioa_register[START_PROCESS] = 0
@@ -158,10 +158,10 @@ class IEC104Server:
         """
         if self.ioa_register[WATER_INLET] == 1:
             # Increase water speed but don't let it go above MAX_WATER_SPEED
-            self.water_speed = min(MAX_WATER_SPEED, self.water_speed + 0.5)
+            self.water_speed = min(MAX_WATER_SPEED, self.water_speed + 0.15)
         else:
             # Decrease water speed but don't let it go below 0
-            self.water_speed = max(0, self.water_speed - 0.5)
+            self.water_speed = max(0, self.water_speed - 0.15)
 
 
     def calculate_turbine_speed(self):
@@ -275,6 +275,8 @@ class IEC104Server:
             if not self.last_cooling_start_time or cooling_active_duration >= COOLING_DURATION:
                 self.last_cooling_start_time = current_time
                 enable_cooling = 1
+            else:
+                enable_cooling = self.ioa_register[COOLING_SWITCH]
         elif cooling_active_duration > COOLING_DURATION:
             enable_cooling = 0
             self.last_cooling_start_time = None
