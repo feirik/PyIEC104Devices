@@ -105,7 +105,7 @@ class Indicator:
         center_x = rect[0] + rect[2] / 2
         center_y = rect[1] + rect[3] / 2
 
-        self.desc_text = self.ax.text(center_x, center_y, "EXCITE SWITCH", weight='bold', ha='center',
+        self.desc_text = self.ax.text(center_x, center_y, "EXCITER BREAKER", weight='bold', ha='center',
                          va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
 
 
@@ -189,7 +189,7 @@ class Indicator:
         center_x = rect[0] + rect[2] / 2
         center_y = rect[1] + rect[3] / 2
 
-        self.desc_text = self.ax.text(center_x, center_y, "TRANSF SWITCH", weight='bold', ha='center',
+        self.desc_text = self.ax.text(center_x, center_y, "TRA BREAKERS", weight='bold', ha='center',
                                       va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
 
 
@@ -247,7 +247,7 @@ class Indicator:
         center_x = rect[0] + rect[2] / 2
         center_y = rect[1] + rect[3] / 2
 
-        self.desc_text = self.ax.text(center_x, center_y, "GRID SWITCH", weight='bold', ha='center',
+        self.desc_text = self.ax.text(center_x, center_y, "GRID BREAKER", weight='bold', ha='center',
                                       va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
 
         # Create a grid_switch dynamic box

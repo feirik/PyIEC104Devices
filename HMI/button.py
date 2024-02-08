@@ -1,5 +1,7 @@
 import tkinter as tk
 from functools import partial
+from tkinter import Toplevel, Button, Label
+from PIL import Image, ImageTk
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -16,6 +18,9 @@ DIALOG_HEIGHT = 106
 INPUT_LOW_LIMIT = 0
 INPUT_HIGH_LIMIT = 1024
 
+POPUP_WIDTH = 1280
+POPUP_HEIGHT = 720
+
 # Button, text and rectangle positions
 BTN_POS = {
     'water_btn': [0.075, 0.74, 0.314, 0.12],
@@ -25,7 +30,7 @@ BTN_POS = {
     'grid_btn': [0.075, 0.08, 0.314, 0.12],
     'start_btn': [0.495, 0.295, 0.25, 0.07],
     'shutdown_btn': [0.495, 0.1875, 0.25, 0.07],
-    'low_view_btn': [0.495, 0.08, 0.25, 0.07],
+    'show_drawing_btn': [0.495, 0.08, 0.25, 0.07],
 }
 
 RECT = {
@@ -105,8 +110,8 @@ class ButtonView:
         self.excite_button_ax = self.fig.add_axes(BTN_POS['excite_btn'])
 
         # Create the button with hover effect
-        self.excite_button = Button(self.excite_button_ax, 'TOGGLE\nEXCITE SWITCH', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
-        self.excite_button.on_clicked(partial(self._on_toggle_button_click, title="Change Excite Switch", prompt="Toggle excite switch.", addr=101))
+        self.excite_button = Button(self.excite_button_ax, 'TOGGLE\nEXCITER BREAKER', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
+        self.excite_button.on_clicked(partial(self._on_toggle_button_click, title="Change Exciter Breaker", prompt="Toggle exciter breaker position.", addr=101))
 
         # Add the rectangle
         rectangle = plt.Rectangle(BTN_RECT_BORDER['start'], *BTN_RECT_BORDER['size'], 
@@ -117,8 +122,8 @@ class ButtonView:
         self.tr_sw_button_ax = self.fig.add_axes(BTN_POS['tr_sw_btn'])
 
         # Create the button with hover effect
-        self.tr_sw_button = Button(self.tr_sw_button_ax, 'TOGGLE\nTRANSFORMER SWITCH', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
-        self.tr_sw_button.on_clicked(partial(self._on_toggle_button_click, title="Change Transformer Switch", prompt="Toggle transformer switch.", addr=102))
+        self.tr_sw_button = Button(self.tr_sw_button_ax, 'TOGGLE\nTRANSFORMER BREAKERS', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
+        self.tr_sw_button.on_clicked(partial(self._on_toggle_button_click, title="Change Transformer Breaker", prompt="Toggle transformer breaker positions.", addr=102))
 
         # Add the rectangle
         rectangle = plt.Rectangle(BTN_RECT_BORDER['start'], *BTN_RECT_BORDER['size'], 
@@ -129,8 +134,8 @@ class ButtonView:
         self.grid_button_ax = self.fig.add_axes(BTN_POS['grid_btn'])
 
         # Create the button with hover effect
-        self.grid_button = Button(self.grid_button_ax, 'TOGGLE\nGRID SWITCH', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
-        self.grid_button.on_clicked(partial(self._on_toggle_button_click, title="Change Grid Switch", prompt="Toggle grid switch.", addr=103))
+        self.grid_button = Button(self.grid_button_ax, 'TOGGLE\nGRID BREAKER', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
+        self.grid_button.on_clicked(partial(self._on_toggle_button_click, title="Change Grid Breaker", prompt="Toggle grid breaker position.", addr=103))
 
         # Add the rectangle
         rectangle = plt.Rectangle(BTN_RECT_BORDER['start'], *BTN_RECT_BORDER['size'], 
@@ -161,17 +166,14 @@ class ButtonView:
                                 facecolor=HPHMI.gray, edgecolor=HPHMI.dark_gray, linewidth=BTN_RECT_BORDER['line_width'])
         self.shutdown_button_ax.add_patch(rectangle)
 
-        # View 100-140V button
-        self.low_view_button_ax = self.fig.add_axes(BTN_POS['low_view_btn'])
+        # Add button to show system overview
+        self.show_drawing_button_ax = self.fig.add_axes(BTN_POS['show_drawing_btn'])
+        self.show_drawing_button = Button(self.show_drawing_button_ax, 'SHOW SYSTEM', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
+        self.show_drawing_button.on_clicked(self.show_image_popup)
 
-        # Create the button with hover effect
-        self.low_view_button = Button(self.low_view_button_ax, 'UNUSED', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
-        #TODO self.low_view_button.on_clicked(self.controller.set_low_view)
-
-        # Add the rectangle
         rectangle = plt.Rectangle(BTN_RECT_BORDER['start'], *BTN_RECT_BORDER['size'], 
-                                facecolor=HPHMI.gray, edgecolor=HPHMI.dark_gray, linewidth=BTN_RECT_BORDER['line_width'])
-        self.low_view_button_ax.add_patch(rectangle)
+                                  facecolor=HPHMI.gray, edgecolor=HPHMI.dark_gray, linewidth=BTN_RECT_BORDER['line_width'])
+        self.show_drawing_button_ax.add_patch(rectangle)
 
         # Create faceplate zone
         rect = RECT['faceplate_zone']
@@ -360,3 +362,27 @@ class ButtonView:
     def close_window(self):
         self.result = None
         self.dialog_window.destroy()
+
+    def show_image_popup(self, event):
+        # Create a top-level window
+        popup = tk.Toplevel()
+        popup.title("Hydropower Generation Plant Schematic")
+        popup.geometry(f"{POPUP_WIDTH}x{POPUP_HEIGHT}")
+
+        # Load and display the image
+        image = Image.open("assets/Hydropower_overview.PNG")
+        photo = ImageTk.PhotoImage(image)
+        label = tk.Label(popup, image=photo)
+        label.image = photo
+        label.pack()
+
+        # Add a close button with specified font, padding, and size
+        close_button = tk.Button(popup, text="Close Window", command=popup.destroy, 
+                                font=("Arial", 12), padx=25, pady=5)
+        # Place the button at the bottom middle of the `popup`. Adjust `relx` and `rely` as needed.
+        close_button.place(relx=0.5, rely=0.95, anchor="center")
+
+        # Center the popup window
+        screen_width = popup.winfo_screenwidth()
+        screen_height = popup.winfo_screenheight()
+        popup.geometry(f"{POPUP_WIDTH}x{POPUP_HEIGHT}")
