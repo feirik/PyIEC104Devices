@@ -5,12 +5,22 @@ from colors import HPHMI
 
 RECT = {
     'control_status': [0.022, 0.885, 0.954, 0.07],
-    'enable_output_desc': [0.022, 0.815, 0.32, 0.07],
-    'enable_output_dynamic': [0.022, 0.745, 0.32, 0.07],
-    'enable_override_desc': [0.505, 0.815, 0.32, 0.07],
-    'enable_override_dynamic': [0.505, 0.745, 0.32, 0.07],
-    'filler_box_right': [0.825, 0.745, 0.151, 0.14],
-    'filler_box_left': [0.342, 0.745, 0.163, 0.14]
+    'water_inlet_desc': [0.022, 0.815, 0.32, 0.07],
+    'water_inlet_dynamic': [0.022, 0.745, 0.32, 0.07],
+    'excite_switch_desc': [0.505, 0.815, 0.32, 0.07],
+    'excite_switch_dynamic': [0.505, 0.745, 0.32, 0.07],
+    'filler_box_right': [0.825, 0.465, 0.151, 0.42],
+    'filler_box_left': [0.342, 0.325, 0.163, 0.56],
+    'cooling_switch_desc': [0.022, 0.675, 0.32, 0.07],
+    'cooling_switch_dynamic': [0.022, 0.605, 0.32, 0.07],
+    'transformer_sw_desc': [0.505, 0.675, 0.32, 0.07],
+    'transformer_sw_dynamic': [0.505, 0.605, 0.32, 0.07],
+    'start_seq_desc': [0.022, 0.535, 0.32, 0.07],
+    'start_seq_dynamic': [0.022, 0.465, 0.32, 0.07],
+    'grid_switch_desc': [0.505, 0.535, 0.32, 0.07],
+    'grid_switch_dynamic': [0.505, 0.465, 0.32, 0.07],
+    'shutdown_seq_desc': [0.022, 0.395, 0.32, 0.07],
+    'shutdown_seq_dynamic': [0.022, 0.325, 0.32, 0.07]
 }
 
 class Indicator:
@@ -54,8 +64,8 @@ class Indicator:
         self.desc_text = self.ax.text(center_x, center_y, "Control Status", weight='bold', ha='center',
                          va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
 
-        # Create a enable output description box
-        rect = RECT['enable_output_desc']
+        # Create a water_inlet description box
+        rect = RECT['water_inlet_desc']
 
         self.description_box = self.ax.add_patch(
             Rectangle((rect[0], rect[1]), rect[2], rect[3], transform=self.fig.transFigure, 
@@ -65,14 +75,14 @@ class Indicator:
         center_x = rect[0] + rect[2] / 2
         center_y = rect[1] + rect[3] / 2
 
-        self.desc_text = self.ax.text(center_x, center_y, "ENABLE OUTPUT", weight='bold', ha='center',
+        self.desc_text = self.ax.text(center_x, center_y, "WATER INLET", weight='bold', ha='center',
                                       va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
 
 
-        # Create a enable output dynamic box
-        rect = RECT['enable_output_dynamic']
+        # Create a water_inlet dynamic box
+        rect = RECT['water_inlet_dynamic']
 
-        self.en_output_box = self.ax.add_patch(
+        self.water_inlet_box = self.ax.add_patch(
             Rectangle((rect[0], rect[1]), rect[2], rect[3], transform=self.fig.transFigure, 
                     facecolor=HPHMI.gray, edgecolor=HPHMI.darker_gray, linewidth=0.5, clip_on=False)
         )
@@ -80,12 +90,12 @@ class Indicator:
         center_x = rect[0] + rect[2] / 2
         center_y = rect[1] + rect[3] / 2
 
-        self.en_output_text = self.ax.text(center_x, center_y, "Loading...", weight='bold', ha='center',
+        self.water_inlet_text = self.ax.text(center_x, center_y, "Loading...", weight='bold', ha='center',
                          va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
 
 
-        # Create a enable override description box
-        rect = RECT['enable_override_desc']
+        # Create a excite_switch description box
+        rect = RECT['excite_switch_desc']
 
         self.description_box = self.ax.add_patch(
             Rectangle((rect[0], rect[1]), rect[2], rect[3], transform=self.fig.transFigure, 
@@ -95,14 +105,14 @@ class Indicator:
         center_x = rect[0] + rect[2] / 2
         center_y = rect[1] + rect[3] / 2
 
-        self.desc_text = self.ax.text(center_x, center_y, "ENABLE OVERRIDE", weight='bold', ha='center',
+        self.desc_text = self.ax.text(center_x, center_y, "EXCITE SWITCH", weight='bold', ha='center',
                          va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
 
 
-        # Create a enable override dynamic box
-        rect = RECT['enable_override_dynamic']
+        # Create a excite_switch dynamic box
+        rect = RECT['excite_switch_dynamic']
 
-        self.en_ovverride_box = self.ax.add_patch(
+        self.excite_switch_box = self.ax.add_patch(
             Rectangle((rect[0], rect[1]), rect[2], rect[3], transform=self.fig.transFigure, 
                     facecolor=HPHMI.gray, edgecolor=HPHMI.darker_gray, linewidth=0.5, clip_on=False)
         )
@@ -110,7 +120,7 @@ class Indicator:
         center_x = rect[0] + rect[2] / 2
         center_y = rect[1] + rect[3] / 2
 
-        self.en_override_text = self.ax.text(center_x, center_y, "Loading...", weight='bold', ha='center',
+        self.excite_switch_text = self.ax.text(center_x, center_y, "Loading...", weight='bold', ha='center',
                          va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
 
 
@@ -138,31 +148,217 @@ class Indicator:
         self.fig.patches.extend([outline_box])
 
 
-    def update_status(self, data):
-        """Update the status of both boxes based on the coil statuses."""
-        
-        # TODO, use actual new values from data
-        enable_output = 1
-        enable_override = 1
+        # Create a cooling_switch description box
+        rect = RECT['cooling_switch_desc']
 
-        # Update 'enable_output' box and text
-        if enable_output:
-            self.en_output_box.set_facecolor(HPHMI.white)
-            self.en_output_text.set_text("ON")
-            self.en_output_text.set_color(HPHMI.dark_blue)
-        else:
-            self.en_output_box.set_facecolor(HPHMI.dark_gray)
-            self.en_output_text.set_text("OFF")
-            self.en_output_text.set_color(HPHMI.dark_blue)
+        self.description_box = self.ax.add_patch(
+            Rectangle((rect[0], rect[1]), rect[2], rect[3], transform=self.fig.transFigure, 
+                    facecolor=HPHMI.gray, edgecolor=HPHMI.darker_gray, linewidth=0.5, clip_on=False)
+        )
 
-        # Update 'enable_override' box and text
-        if enable_override:
-            self.en_ovverride_box.set_facecolor(HPHMI.white)
-            self.en_override_text.set_text("ON")
-            self.en_override_text.set_color(HPHMI.dark_blue)
+        center_x = rect[0] + rect[2] / 2
+        center_y = rect[1] + rect[3] / 2
+
+        self.desc_text = self.ax.text(center_x, center_y, "COOLING SYSTEM", weight='bold', ha='center',
+                                      va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
+
+
+        # Create a cooling_switch dynamic box
+        rect = RECT['cooling_switch_dynamic']
+
+        self.cooling_switch_box = self.ax.add_patch(
+            Rectangle((rect[0], rect[1]), rect[2], rect[3], transform=self.fig.transFigure, 
+                    facecolor=HPHMI.gray, edgecolor=HPHMI.darker_gray, linewidth=0.5, clip_on=False)
+        )
+
+        center_x = rect[0] + rect[2] / 2
+        center_y = rect[1] + rect[3] / 2
+
+        self.cooling_switch_text = self.ax.text(center_x, center_y, "Loading...", weight='bold', ha='center',
+                         va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
+
+
+        # Create a transformer_sw description box
+        rect = RECT['transformer_sw_desc']
+
+        self.description_box = self.ax.add_patch(
+            Rectangle((rect[0], rect[1]), rect[2], rect[3], transform=self.fig.transFigure, 
+                    facecolor=HPHMI.gray, edgecolor=HPHMI.darker_gray, linewidth=0.5, clip_on=False)
+        )
+
+        center_x = rect[0] + rect[2] / 2
+        center_y = rect[1] + rect[3] / 2
+
+        self.desc_text = self.ax.text(center_x, center_y, "TRANSF SWITCH", weight='bold', ha='center',
+                                      va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
+
+
+        # Create a transformer_sw dynamic box
+        rect = RECT['transformer_sw_dynamic']
+
+        self.transformer_sw_box = self.ax.add_patch(
+            Rectangle((rect[0], rect[1]), rect[2], rect[3], transform=self.fig.transFigure, 
+                    facecolor=HPHMI.gray, edgecolor=HPHMI.darker_gray, linewidth=0.5, clip_on=False)
+        )
+
+        center_x = rect[0] + rect[2] / 2
+        center_y = rect[1] + rect[3] / 2
+
+        self.transformer_sw_text = self.ax.text(center_x, center_y, "Loading...", weight='bold', ha='center',
+                         va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
+
+
+        # Create a start_seq description box
+        rect = RECT['start_seq_desc']
+
+        self.description_box = self.ax.add_patch(
+            Rectangle((rect[0], rect[1]), rect[2], rect[3], transform=self.fig.transFigure, 
+                    facecolor=HPHMI.gray, edgecolor=HPHMI.darker_gray, linewidth=0.5, clip_on=False)
+        )
+
+        center_x = rect[0] + rect[2] / 2
+        center_y = rect[1] + rect[3] / 2
+
+        self.desc_text = self.ax.text(center_x, center_y, "STARTUP", weight='bold', ha='center',
+                                      va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
+
+        # Create a start_seq dynamic box
+        rect = RECT['start_seq_dynamic']
+
+        self.start_seq_box = self.ax.add_patch(
+            Rectangle((rect[0], rect[1]), rect[2], rect[3], transform=self.fig.transFigure, 
+                    facecolor=HPHMI.gray, edgecolor=HPHMI.darker_gray, linewidth=0.5, clip_on=False)
+        )
+
+        center_x = rect[0] + rect[2] / 2
+        center_y = rect[1] + rect[3] / 2
+
+        self.start_seq_text = self.ax.text(center_x, center_y, "Loading...", weight='bold', ha='center',
+                         va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
+
+        # Create a grid_switch description box
+        rect = RECT['grid_switch_desc']
+
+        self.description_box = self.ax.add_patch(
+            Rectangle((rect[0], rect[1]), rect[2], rect[3], transform=self.fig.transFigure, 
+                    facecolor=HPHMI.gray, edgecolor=HPHMI.darker_gray, linewidth=0.5, clip_on=False)
+        )
+
+        center_x = rect[0] + rect[2] / 2
+        center_y = rect[1] + rect[3] / 2
+
+        self.desc_text = self.ax.text(center_x, center_y, "GRID SWITCH", weight='bold', ha='center',
+                                      va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
+
+        # Create a grid_switch dynamic box
+        rect = RECT['grid_switch_dynamic']
+
+        self.grid_switch_box = self.ax.add_patch(
+            Rectangle((rect[0], rect[1]), rect[2], rect[3], transform=self.fig.transFigure, 
+                    facecolor=HPHMI.gray, edgecolor=HPHMI.darker_gray, linewidth=0.5, clip_on=False)
+        )
+
+        center_x = rect[0] + rect[2] / 2
+        center_y = rect[1] + rect[3] / 2
+
+        self.grid_switch_text = self.ax.text(center_x, center_y, "Loading...", weight='bold', ha='center',
+                         va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
+
+        # Create a shutdown_seq description box
+        rect = RECT['shutdown_seq_desc']
+
+        self.description_box = self.ax.add_patch(
+            Rectangle((rect[0], rect[1]), rect[2], rect[3], transform=self.fig.transFigure, 
+                    facecolor=HPHMI.gray, edgecolor=HPHMI.darker_gray, linewidth=0.5, clip_on=False)
+        )
+
+        center_x = rect[0] + rect[2] / 2
+        center_y = rect[1] + rect[3] / 2
+
+        self.desc_text = self.ax.text(center_x, center_y, "SHUTDOWN", weight='bold', ha='center',
+                                      va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
+
+        # Create a shutdown_seq dynamic box
+        rect = RECT['shutdown_seq_dynamic']
+
+        self.shutdown_seq_box = self.ax.add_patch(
+            Rectangle((rect[0], rect[1]), rect[2], rect[3], transform=self.fig.transFigure, 
+                    facecolor=HPHMI.gray, edgecolor=HPHMI.darker_gray, linewidth=0.5, clip_on=False)
+        )
+
+        center_x = rect[0] + rect[2] / 2
+        center_y = rect[1] + rect[3] / 2
+
+        self.shutdown_seq_text = self.ax.text(center_x, center_y, "Loading...", weight='bold', ha='center',
+                         va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
+
+
+
+    def update_status(self, water_in, exc_sw, cool_sw, tr_sw, start, grid_sw, shutdown):
+        """Update the status of boxes based on the read statuses."""
+
+        # Update 'water_inlet' box and text
+        if water_in:
+            self.water_inlet_box.set_facecolor(HPHMI.white)
+            self.water_inlet_text.set_text("OPEN")
+            self.water_inlet_text.set_color(HPHMI.dark_blue)
         else:
-            self.en_ovverride_box.set_facecolor(HPHMI.dark_gray)
-            self.en_override_text.set_text("OFF")
-            self.en_override_text.set_color(HPHMI.dark_blue)
+            self.water_inlet_box.set_facecolor(HPHMI.dark_gray)
+            self.water_inlet_text.set_text("CLOSED")
+            self.water_inlet_text.set_color(HPHMI.dark_blue)
+
+        if exc_sw:
+            self.excite_switch_box.set_facecolor(HPHMI.white)
+            self.excite_switch_text.set_text("ON")
+            self.excite_switch_text.set_color(HPHMI.dark_blue)
+        else:
+            self.excite_switch_box.set_facecolor(HPHMI.dark_gray)
+            self.excite_switch_text.set_text("OFF")
+            self.excite_switch_text.set_color(HPHMI.dark_blue)
+
+        if cool_sw:
+            self.cooling_switch_box.set_facecolor(HPHMI.white)
+            self.cooling_switch_text.set_text("ON")
+            self.cooling_switch_text.set_color(HPHMI.dark_blue)
+        else:
+            self.cooling_switch_box.set_facecolor(HPHMI.dark_gray)
+            self.cooling_switch_text.set_text("OFF")
+            self.cooling_switch_text.set_color(HPHMI.dark_blue)
+
+        if tr_sw:
+            self.transformer_sw_box.set_facecolor(HPHMI.white)
+            self.transformer_sw_text.set_text("ON")
+            self.transformer_sw_text.set_color(HPHMI.dark_blue)
+        else:
+            self.transformer_sw_box.set_facecolor(HPHMI.dark_gray)
+            self.transformer_sw_text.set_text("OFF")
+            self.transformer_sw_text.set_color(HPHMI.dark_blue)
+
+        if start:
+            self.start_seq_box.set_facecolor(HPHMI.white)
+            self.start_seq_text.set_text("ACTIVE")
+            self.start_seq_text.set_color(HPHMI.dark_blue)
+        else:
+            self.start_seq_box.set_facecolor(HPHMI.dark_gray)
+            self.start_seq_text.set_text("OFF")
+            self.start_seq_text.set_color(HPHMI.dark_blue)
+
+        if grid_sw:
+            self.grid_switch_box.set_facecolor(HPHMI.white)
+            self.grid_switch_text.set_text("ON")
+            self.grid_switch_text.set_color(HPHMI.dark_blue)
+        else:
+            self.grid_switch_box.set_facecolor(HPHMI.dark_gray)
+            self.grid_switch_text.set_text("OFF")
+            self.grid_switch_text.set_color(HPHMI.dark_blue)
+
+        if shutdown:
+            self.shutdown_seq_box.set_facecolor(HPHMI.white)
+            self.shutdown_seq_text.set_text("ACTIVE")
+            self.shutdown_seq_text.set_color(HPHMI.dark_blue)
+        else:
+            self.shutdown_seq_box.set_facecolor(HPHMI.dark_gray)
+            self.shutdown_seq_text.set_text("OFF")
+            self.shutdown_seq_text.set_color(HPHMI.dark_blue)
 
         self.canvas.draw()
