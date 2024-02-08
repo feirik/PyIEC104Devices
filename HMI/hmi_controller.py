@@ -1,6 +1,7 @@
 import tkinter as tk
 import os
 import sys
+import threading
 
 # Add the parent directory of this script to the system path to allow importing modules from there
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -11,7 +12,7 @@ from graph import GraphView
 from indicator import Indicator
 from button import ButtonView
 
-READ_INTERVAL_MS = 1000
+READ_INTERVAL_MS = 2000
 
 # Define constants for dynamic bar layout
 DYNAMIC_BAR_ROW = 0
@@ -107,35 +108,99 @@ class HMIController:
         return self.data[addr]
 
 
+    def fetch_data_threaded(self, callback):
+        def run():
+            try:
+                data = self.read_values()  # Fetch data in the background thread
+                self.view.after(0, callback, data)  # Schedule the callback on the main thread
+            except Exception as e:
+                print(f"Error fetching data in background thread: {e}")
+        
+        # Start the background thread
+        threading.Thread(target=run, daemon=True).start()
+
+
+    def process_fetched_data(self, data):
+        if data:
+            self.data = data  # Update the data attribute on the main thread
+        else:
+            print("No data received or data fetch failed.")
+
     def read_data_periodically(self):
         # First, we cancel any previous scheduling to ensure that we don't have multiple calls scheduled
         if hasattr(self, '_after_id'):
             self.view.after_cancel(self._after_id)
 
-        try:
-            data = self.read_values()
+        # Start the data fetching process in a separate thread
+        self.fetch_data_threaded(self.process_fetched_data)
 
-            if data:
-                generator_voltage = data[GENERATOR_VOLTAGE]
-                grid_power = data[GRID_POWER]
-                bearing_temperature = data[BEARING_TEMP]
-                turbine_speed = data[TURBINE_SPEED]
+        try:
+            if self.data:
+                generator_voltage = self.data[GENERATOR_VOLTAGE]
+                grid_power = self.data[GRID_POWER]
+                bearing_temperature = self.data[BEARING_TEMP]
+                turbine_speed = self.data[TURBINE_SPEED]
 
                 self.graph.update_graph(generator_voltage, grid_power)
-                self.data = data
-
+                
                 self.dynamic_bar.update_bars(round(bearing_temperature, 1), turbine_speed, 
                                              round(generator_voltage, 1), round(grid_power, 1))
-            
 
-            # Pass in data instead
-            self.indicator.update_status(data)
+                water_in = self.data[WATER_INLET]
+                exc_sw = self.data[EXCITE_SWITCH]
+                cool_sw = self.data[COOLING_SWITCH]
+                tr_sw = self.data[TRANSFORMER_SWITCH]
+                start = self.data[START_PROCESS]
+                grid_sw = self.data[GRID_SWITCH]
+                shutdown = self.data[SHUTDOWN_PROCESS]
+
+                self.indicator.update_status(water_in, exc_sw, cool_sw, tr_sw, start, grid_sw, shutdown)
+
 
             # Save the after_id to cancel it later upon closing
             self._after_id = self.view.after(READ_INTERVAL_MS, self.read_data_periodically)
 
         except Exception as e:
             print('Error:', e)
+
+
+    # def read_data_periodically(self):
+    #     # First, we cancel any previous scheduling to ensure that we don't have multiple calls scheduled
+    #     if hasattr(self, '_after_id'):
+    #         self.view.after_cancel(self._after_id)
+
+    #     try:
+    #         data = self.read_values()
+    #         self.data = data
+
+    #         if data:
+    #             generator_voltage = data[GENERATOR_VOLTAGE]
+    #             grid_power = data[GRID_POWER]
+    #             bearing_temperature = data[BEARING_TEMP]
+    #             turbine_speed = data[TURBINE_SPEED]
+
+    #             self.graph.update_graph(generator_voltage, grid_power)
+    #             self.data = data
+
+    #             self.dynamic_bar.update_bars(round(bearing_temperature, 1), turbine_speed, 
+    #                                          round(generator_voltage, 1), round(grid_power, 1))
+
+    #             water_in = data[WATER_INLET]
+    #             exc_sw = data[EXCITE_SWITCH]
+    #             cool_sw = data[COOLING_SWITCH]
+    #             tr_sw = data[TRANSFORMER_SWITCH]
+    #             start = data[START_PROCESS]
+    #             grid_sw = data[GRID_SWITCH]
+    #             shutdown = data[SHUTDOWN_PROCESS]
+
+    #             self.indicator.update_status(water_in, exc_sw, cool_sw, tr_sw, start, grid_sw, shutdown)
+
+
+    #         # Save the after_id to cancel it later upon closing
+    #         self._after_id = self.view.after(READ_INTERVAL_MS, self.read_data_periodically)
+
+    #     except Exception as e:
+    #         print('Error:', e)
 
 
     def on_closing(self):

@@ -16,6 +16,7 @@ BAR2_X_AXIS_OFFSET = 0.29
 BAR3_X_AXIS_OFFSET = 0.48
 BAR4_X_AXIS_OFFSET = 0.68
 
+# Total bar start and end, min and max for dynamic inner bar
 BAR1_START = 0
 BAR1_END = 80
 BAR1_MIN = 15
@@ -222,8 +223,9 @@ class DynamicBar:
 
     def _display_warning(self, min_set_point, max_set_point, set_point, triangle):
         # Check if set_point is out of bounds and display warning triangle
-        if set_point > 1.0:
-            if set_point < min_set_point or set_point > max_set_point:
+        if set_point < min_set_point or set_point > max_set_point:
+            # Value needs to be different from 0 to show warning
+            if set_point > 1.0:
                 triangle.set_visible(True)
-            else:
-                triangle.set_visible(False)
+        else:
+            triangle.set_visible(False)

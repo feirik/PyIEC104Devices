@@ -62,7 +62,7 @@ class GraphView:
         self.ax.set_ylim(Y_MIN, Y_MAX)
 
         self.ax.set_xticks([0, 60, 120, 180, 240, 300])
-        self.ax.set_xticklabels(['-5','-4','-3', '-2', '-1', '5m'])
+        self.ax.set_xticklabels(['-10','-8','-6', '-4', '-2', '10m'])
         xticks = self.ax.get_xticklabels()
         xticks[-1].set_color(HPHMI.dark_green)
         xticks[-1].set_weight('bold')
@@ -222,7 +222,7 @@ class GraphView:
 
         # Set x-ticks to represent elapsed time
         self.ax.set_xticks([0, 60, 120, 180, 240, 300])
-        self.ax.set_xticklabels(['-5','-4','-3', '-2', '-1', '5m'])
+        self.ax.set_xticklabels(['-10','-8','-6', '-4', '-2', '10m'])
 
         # Set rightmost x-tick to describe the x-axis
         xticks = self.ax.get_xticklabels()
