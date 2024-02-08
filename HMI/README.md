@@ -42,3 +42,7 @@ The HMI components:
 
 ![HMI Screenshot](./assets/HMI_example.PNG)
 
+System overview as a basis for the simulation:
+
+![System Overview](./assets/Hydropower_overview.PNG)
+
