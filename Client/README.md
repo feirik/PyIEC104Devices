@@ -63,10 +63,13 @@ Initializes a `IEC104ClientAPI` object and connects to the server.
 #### Methods:
 
 - **write_single_command(ioa: int, value: bool) -> int**:
-  Sends a single command (e.g., a switch operation) to the IEC 104 server. The ioa parameter specifies the Information Object Address, and the value parameter specifies the command state (True for ON, False for OFF). Returns 1 on success and 0 on failure.
+Sends a single command (e.g., a switch operation) to the IEC 104 server. The ioa parameter specifies the Information Object Address, and the value parameter specifies the command state (True for ON, False for OFF). Returns 1 on success and 0 on failure.
 
 - **write_setpoint_command(ioa: int, value: float) -> int**:
-  Sends a setpoint command to the IEC 104 server, adjusting a value such as a threshold or setpoint. The ioa parameter specifies the Information Object Address, and the value parameter specifies the setpoint value as a floating-point number. Returns 1 on success and 0 on failure.
+Sends a setpoint command to the IEC 104 server, adjusting a value such as a threshold or setpoint. The ioa parameter specifies the Information Object Address, and the value parameter specifies the setpoint value as a floating-point number. Returns 1 on success and 0 on failure.
+
+- **request_data() -> dict or None**:
+Requests the current state or value of all configured Information Object Addresses (IOAs) from the server. Returns a dictionary mapping each ioa to its current value if successful. Returns None if the request fails or if data processing encounters errors.
 
 - **close()**:
-  Closes the connection to the IEC 104 server.
+Closes the connection to the IEC 104 server.
