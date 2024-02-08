@@ -91,17 +91,20 @@ class HMIController:
         client.close()
         return result
 
+
     def write_float(self, addr, value):
         client = IEC104ClientAPI(self.host, self.port, self.timeout)
         result = client.write_setpoint_command(addr, value)
         client.close()
         return result
 
+
     def read_values(self):
         client = IEC104ClientAPI(self.host, self.port, self.timeout)
         data = client.request_data()
         client.close()
         return data
+
 
     def get_current_value(self, addr):
         return self.data[addr]
@@ -124,6 +127,7 @@ class HMIController:
             self.data = data  # Update the data attribute on the main thread
         else:
             print("No data received or data fetch failed.")
+
 
     def read_data_periodically(self):
         # First, we cancel any previous scheduling to ensure that we don't have multiple calls scheduled

@@ -363,6 +363,7 @@ class ButtonView:
         self.result = None
         self.dialog_window.destroy()
 
+
     def show_image_popup(self, event):
         # Create a top-level window
         popup = tk.Toplevel()
