@@ -5,6 +5,8 @@ import sys
 import re
 import time
 
+VERSION = '0.1.0'
+
 IEC104_PORT = 2404
 
 MAX_UINT16 = 65535
