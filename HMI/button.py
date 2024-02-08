@@ -82,7 +82,7 @@ class ButtonView:
         self.water_button_ax = self.fig.add_axes(BTN_POS['water_btn'])
 
         # Create the button with hover effect
-        self.water_button = Button(self.water_button_ax, 'TOGGLE\nWATER INLET', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
+        self.water_button = Button(self.water_button_ax, 'TOGGLE\nWATER INLET VALVE', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
         self.water_button.on_clicked(partial(self._on_toggle_button_click, title="Change Water Inlet", prompt="Toggle water inlet valve position.", addr=100))
 
         # Here, the rectangle is slightly smaller than the full button
@@ -94,7 +94,7 @@ class ButtonView:
         self.cooling_button_ax = self.fig.add_axes(BTN_POS['cooling_btn'])
 
         # Create the button with hover effect
-        self.cooling_button = Button(self.cooling_button_ax, 'TOGGLE\nCOOLING SYSTEM', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
+        self.cooling_button = Button(self.cooling_button_ax, 'TOGGLE\nCOOLING SYSTEM STATUS', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
         self.cooling_button.on_clicked(partial(self._on_toggle_button_click, title="Change Cooling System", prompt="Toggle cooling system status.", addr=104))
 
         rectangle = plt.Rectangle(BTN_RECT_BORDER['start'], *BTN_RECT_BORDER['size'], 

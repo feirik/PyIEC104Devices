@@ -302,7 +302,7 @@ class IEC104Client:
         return asdu
 
     
-    def decode_iec104_response(self, response):
+    def decode_iec104_response(self, response, print_output=True):
         success = True
         ioa_value = None
         return_value = None
@@ -338,7 +338,8 @@ class IEC104Client:
                     if self.print_debug:
                         print(f"(IOA {ioa_value:3}): {status_str:<{max_width}}   ---   Type: Single point  ---   COT: {cot_desc}")
                     else:
-                        print(f"(IOA {ioa_value:3}): {status_str:<{max_width}}")
+                        if print_output:
+                            print(f"(IOA {ioa_value:3}): {status_str:<{max_width}}")
                 elif type_id == FLOAT_INFO and len(response) >= value_start + 4:
                     floating_value_bytes = response[value_start:value_start+4]
                     measured_value = struct.unpack('<f', floating_value_bytes)[0]
@@ -347,7 +348,8 @@ class IEC104Client:
                     if self.print_debug:
                         print(f"(IOA {ioa_value:3}): {measured_value_formatted}   ---   Type: Measured Value (Short Float)   ---   COT: {cot_desc}")
                     else:
-                        print(f"(IOA {ioa_value:3}): {measured_value_formatted}")
+                        if print_output:
+                            print(f"(IOA {ioa_value:3}): {measured_value_formatted}")
                 else:
                     print("Not enough data for value")
                     success = False
@@ -451,7 +453,7 @@ class IEC104Client:
             return False, None
 
         for response in responses:
-            success, ioa, value = self.decode_iec104_response(response)
+            success, ioa, value = self.decode_iec104_response(response, False)
             if success:
                 data[ioa] = value
             else:

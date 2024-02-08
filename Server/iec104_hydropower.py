@@ -292,7 +292,8 @@ class IEC104Server:
 
         while self.listening:
             conn, addr = self.socket.accept()
-            print(f"Client connected from {addr}")
+            if self.debug:
+             print(f"Client connected from {addr}")
 
             while True:
                 request = conn.recv(1024)
@@ -318,7 +319,8 @@ class IEC104Server:
                 self.receive_sequence_number += 1
 
             conn.close()
-            print(f"Client disconnected: {addr}")
+            if self.debug:
+                print(f"Client disconnected: {addr}")
 
 
     def handle_handshake_request(self, request):

@@ -101,7 +101,6 @@ class HMIController:
         client = IEC104ClientAPI(self.host, self.port, self.timeout)
         data = client.request_data()
         client.close()
-        
         return data
 
     def get_current_value(self, addr):
@@ -134,73 +133,30 @@ class HMIController:
         # Start the data fetching process in a separate thread
         self.fetch_data_threaded(self.process_fetched_data)
 
-        try:
-            if self.data:
-                generator_voltage = self.data[GENERATOR_VOLTAGE]
-                grid_power = self.data[GRID_POWER]
-                bearing_temperature = self.data[BEARING_TEMP]
-                turbine_speed = self.data[TURBINE_SPEED]
+        if self.data:
+            generator_voltage = self.data[GENERATOR_VOLTAGE]
+            grid_power = self.data[GRID_POWER]
+            bearing_temperature = self.data[BEARING_TEMP]
+            turbine_speed = self.data[TURBINE_SPEED]
 
-                self.graph.update_graph(generator_voltage, grid_power)
-                
-                self.dynamic_bar.update_bars(round(bearing_temperature, 1), turbine_speed, 
-                                             round(generator_voltage, 1), round(grid_power, 1))
+            self.graph.update_graph(generator_voltage, grid_power)
 
-                water_in = self.data[WATER_INLET]
-                exc_sw = self.data[EXCITE_SWITCH]
-                cool_sw = self.data[COOLING_SWITCH]
-                tr_sw = self.data[TRANSFORMER_SWITCH]
-                start = self.data[START_PROCESS]
-                grid_sw = self.data[GRID_SWITCH]
-                shutdown = self.data[SHUTDOWN_PROCESS]
+            self.dynamic_bar.update_bars(round(bearing_temperature, 1), turbine_speed, 
+                                            round(generator_voltage, 1), round(grid_power, 1))
 
-                self.indicator.update_status(water_in, exc_sw, cool_sw, tr_sw, start, grid_sw, shutdown)
+            water_in = self.data[WATER_INLET]
+            exc_sw = self.data[EXCITE_SWITCH]
+            cool_sw = self.data[COOLING_SWITCH]
+            tr_sw = self.data[TRANSFORMER_SWITCH]
+            start = self.data[START_PROCESS]
+            grid_sw = self.data[GRID_SWITCH]
+            shutdown = self.data[SHUTDOWN_PROCESS]
 
-
-            # Save the after_id to cancel it later upon closing
-            self._after_id = self.view.after(READ_INTERVAL_MS, self.read_data_periodically)
-
-        except Exception as e:
-            print('Error:', e)
+            self.indicator.update_status(water_in, exc_sw, cool_sw, tr_sw, start, grid_sw, shutdown)
 
 
-    # def read_data_periodically(self):
-    #     # First, we cancel any previous scheduling to ensure that we don't have multiple calls scheduled
-    #     if hasattr(self, '_after_id'):
-    #         self.view.after_cancel(self._after_id)
-
-    #     try:
-    #         data = self.read_values()
-    #         self.data = data
-
-    #         if data:
-    #             generator_voltage = data[GENERATOR_VOLTAGE]
-    #             grid_power = data[GRID_POWER]
-    #             bearing_temperature = data[BEARING_TEMP]
-    #             turbine_speed = data[TURBINE_SPEED]
-
-    #             self.graph.update_graph(generator_voltage, grid_power)
-    #             self.data = data
-
-    #             self.dynamic_bar.update_bars(round(bearing_temperature, 1), turbine_speed, 
-    #                                          round(generator_voltage, 1), round(grid_power, 1))
-
-    #             water_in = data[WATER_INLET]
-    #             exc_sw = data[EXCITE_SWITCH]
-    #             cool_sw = data[COOLING_SWITCH]
-    #             tr_sw = data[TRANSFORMER_SWITCH]
-    #             start = data[START_PROCESS]
-    #             grid_sw = data[GRID_SWITCH]
-    #             shutdown = data[SHUTDOWN_PROCESS]
-
-    #             self.indicator.update_status(water_in, exc_sw, cool_sw, tr_sw, start, grid_sw, shutdown)
-
-
-    #         # Save the after_id to cancel it later upon closing
-    #         self._after_id = self.view.after(READ_INTERVAL_MS, self.read_data_periodically)
-
-    #     except Exception as e:
-    #         print('Error:', e)
+        # Save the after_id to cancel it later upon closing
+        self._after_id = self.view.after(READ_INTERVAL_MS, self.read_data_periodically)
 
 
     def on_closing(self):
