@@ -8,9 +8,9 @@ from matplotlib.patches import Rectangle
 from colors import HPHMI
 
 # Dialog dimensions and position
-DIALOG_X_POSITION = 818
+DIALOG_X_POSITION = 935
 DIALOG_Y_POSITION = 514
-DIALOG_WIDTH = 225
+DIALOG_WIDTH = 362
 DIALOG_HEIGHT = 106
 
 INPUT_LOW_LIMIT = 0
@@ -18,19 +18,19 @@ INPUT_HIGH_LIMIT = 1024
 
 # Button, text and rectangle positions
 BTN_POS = {
-    'sp_btn': [0.075, 0.74, 0.314, 0.12],
-    'max_btn': [0.075, 0.575, 0.314, 0.12],
-    'min_btn': [0.075, 0.41, 0.314, 0.12],
-    'en_output_btn': [0.075, 0.245, 0.314, 0.12],
-    'en_override_btn': [0.075, 0.08, 0.314, 0.12],
-    'high_view_btn': [0.495, 0.295, 0.25, 0.07],
-    'def_view_btn': [0.495, 0.1875, 0.25, 0.07],
+    'water_btn': [0.075, 0.74, 0.314, 0.12],
+    'cooling_btn': [0.075, 0.575, 0.314, 0.12],
+    'excite_btn': [0.075, 0.41, 0.314, 0.12],
+    'tr_sw_btn': [0.075, 0.245, 0.314, 0.12],
+    'grid_btn': [0.075, 0.08, 0.314, 0.12],
+    'start_btn': [0.495, 0.295, 0.25, 0.07],
+    'shutdown_btn': [0.495, 0.1875, 0.25, 0.07],
     'low_view_btn': [0.495, 0.08, 0.25, 0.07],
 }
 
 RECT = {
     'faceplate_zone': [0.465, 0.52, 0.51, 0.433],
-    'select_view': [0.465, 0.045, 0.31, 0.40],
+    'misc_operations': [0.465, 0.045, 0.31, 0.40],
     'manual_actions': [0.028, 0.045, 0.41, 0.907],
     'info_zone': [0.8, 0.045, 0.175, 0.40]
 }
@@ -42,7 +42,7 @@ BTN_RECT_BORDER = {
 }
 
 TEXT_PLACEMENT = {
-    'select_view': (0, 0.405),
+    'misc_operations': (0, 0.405),
     'manual_actions': (0, 0.91),
     'info_zone': (0, -0.02)  # Relative to the center_y
 }
@@ -50,7 +50,7 @@ TEXT_PLACEMENT = {
 class ButtonView:
     def __init__(self, master, controller, os):
         self.controller = controller
-        self.fig, self.ax = plt.subplots(figsize=(4.4, 3.2))
+        self.fig, self.ax = plt.subplots(figsize=(7, 3.2))
         self.os = os
 
         # Update location of popup dialog for PIOS
@@ -78,94 +78,94 @@ class ButtonView:
         
 
     def _setup_view(self):
-        # Set point button
-        self.sp_button_ax = self.fig.add_axes(BTN_POS['sp_btn'])
+        # Water inlet button
+        self.water_button_ax = self.fig.add_axes(BTN_POS['water_btn'])
 
         # Create the button with hover effect
-        self.sp_button = Button(self.sp_button_ax, 'SET\nSET POINT', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
-        self.sp_button.on_clicked(partial(self._on_button_click_set_value, title="Update Set Point", prompt="Enter value (0-1024):", addr=2))
+        self.water_button = Button(self.water_button_ax, 'TOGGLE\nWATER INLET', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
+        self.water_button.on_clicked(partial(self._on_toggle_button_click, title="Change Water Inlet", prompt="Toggle water inlet valve position.", addr=100))
 
         # Here, the rectangle is slightly smaller than the full button
         rectangle = plt.Rectangle(BTN_RECT_BORDER['start'], *BTN_RECT_BORDER['size'], 
                                 facecolor=HPHMI.gray, edgecolor=HPHMI.dark_gray, linewidth=BTN_RECT_BORDER['line_width'])
-        self.sp_button_ax.add_patch(rectangle)
+        self.water_button_ax.add_patch(rectangle)
 
-        # Max limit button
-        self.max_button_ax = self.fig.add_axes(BTN_POS['max_btn'])
+        # Cooling system button
+        self.cooling_button_ax = self.fig.add_axes(BTN_POS['cooling_btn'])
 
         # Create the button with hover effect
-        self.max_button = Button(self.max_button_ax, 'SET\nMAX LIMIT', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
-        self.max_button.on_clicked(partial(self._on_button_click_set_value, title="Set Max Limit", prompt="Enter value (0-1024):", addr=4))
+        self.cooling_button = Button(self.cooling_button_ax, 'TOGGLE\nCOOLING SYSTEM', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
+        self.cooling_button.on_clicked(partial(self._on_toggle_button_click, title="Change Cooling System", prompt="Toggle cooling system status.", addr=104))
 
         rectangle = plt.Rectangle(BTN_RECT_BORDER['start'], *BTN_RECT_BORDER['size'], 
                                 facecolor=HPHMI.gray, edgecolor=HPHMI.dark_gray, linewidth=BTN_RECT_BORDER['line_width'])
-        self.max_button_ax.add_patch(rectangle)
+        self.cooling_button_ax.add_patch(rectangle)
 
-        # Min limit button
-        self.min_button_ax = self.fig.add_axes(BTN_POS['min_btn'])
+        # Excite switch button
+        self.excite_button_ax = self.fig.add_axes(BTN_POS['excite_btn'])
 
         # Create the button with hover effect
-        self.min_button = Button(self.min_button_ax, 'SET\nMIN LIMIT', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
-        self.min_button.on_clicked(partial(self._on_button_click_set_value, title="Set Min Limit", prompt="Enter value (0-1024):", addr=3))
+        self.excite_button = Button(self.excite_button_ax, 'TOGGLE\nEXCITE SWITCH', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
+        self.excite_button.on_clicked(partial(self._on_toggle_button_click, title="Change Excite Switch", prompt="Toggle excite switch.", addr=101))
 
         # Add the rectangle
         rectangle = plt.Rectangle(BTN_RECT_BORDER['start'], *BTN_RECT_BORDER['size'], 
                                 facecolor=HPHMI.gray, edgecolor=HPHMI.dark_gray, linewidth=BTN_RECT_BORDER['line_width'])
-        self.min_button_ax.add_patch(rectangle)
+        self.excite_button_ax.add_patch(rectangle)
 
-        # Enable output toggle button
-        self.en_output_button_ax = self.fig.add_axes(BTN_POS['en_output_btn'])
+        # Transformer switch toggle button
+        self.tr_sw_button_ax = self.fig.add_axes(BTN_POS['tr_sw_btn'])
 
         # Create the button with hover effect
-        self.en_output_button = Button(self.en_output_button_ax, 'TOGGLE\nENABLE OUTPUT', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
-        self.en_output_button.on_clicked(partial(self._on_toggle_button_click, title="Change Enable Output", prompt="Enable output will be toggled.", addr=0))
+        self.tr_sw_button = Button(self.tr_sw_button_ax, 'TOGGLE\nTRANSFORMER SWITCH', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
+        self.tr_sw_button.on_clicked(partial(self._on_toggle_button_click, title="Change Transformer Switch", prompt="Toggle transformer switch.", addr=102))
 
         # Add the rectangle
         rectangle = plt.Rectangle(BTN_RECT_BORDER['start'], *BTN_RECT_BORDER['size'], 
                                 facecolor=HPHMI.gray, edgecolor=HPHMI.dark_gray, linewidth=BTN_RECT_BORDER['line_width'])
-        self.en_output_button_ax.add_patch(rectangle)
+        self.tr_sw_button_ax.add_patch(rectangle)
 
-        # Enable override toggle button
-        self.en_override_button_ax = self.fig.add_axes(BTN_POS['en_override_btn'])
+        # Grid switch toggle button
+        self.grid_button_ax = self.fig.add_axes(BTN_POS['grid_btn'])
 
         # Create the button with hover effect
-        self.en_override_button = Button(self.en_override_button_ax, 'TOGGLE\nENBL OVERRIDE', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
-        self.en_override_button.on_clicked(partial(self._on_toggle_button_click, title="Change Enable Override", prompt="Enable override will be toggled.", addr=1))
+        self.grid_button = Button(self.grid_button_ax, 'TOGGLE\nGRID SWITCH', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
+        self.grid_button.on_clicked(partial(self._on_toggle_button_click, title="Change Grid Switch", prompt="Toggle grid switch.", addr=103))
 
         # Add the rectangle
         rectangle = plt.Rectangle(BTN_RECT_BORDER['start'], *BTN_RECT_BORDER['size'], 
                                 facecolor=HPHMI.gray, edgecolor=HPHMI.dark_gray, linewidth=BTN_RECT_BORDER['line_width'])
-        self.en_override_button_ax.add_patch(rectangle)
+        self.grid_button_ax.add_patch(rectangle)
 
-        # View 0-400V button
-        self.high_view_button_ax = self.fig.add_axes(BTN_POS['high_view_btn'])
+        # Startup button
+        self.start_button_ax = self.fig.add_axes(BTN_POS['start_btn'])
 
         # Create the button with hover effect
-        self.high_view_button = Button(self.high_view_button_ax, '0-400V', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
-        #TODO self.high_view_button.on_clicked(self.controller.set_high_view)
+        self.start_button = Button(self.start_button_ax, 'AUTO STARTUP', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
+        self.start_button.on_clicked(partial(self._on_toggle_button_click, title="Activate Auto Startup", prompt="Activate auto startup.", addr=105))
 
         # Add the rectangle
         rectangle = plt.Rectangle(BTN_RECT_BORDER['start'], *BTN_RECT_BORDER['size'], 
                                 facecolor=HPHMI.gray, edgecolor=HPHMI.dark_gray, linewidth=BTN_RECT_BORDER['line_width'])
-        self.high_view_button_ax.add_patch(rectangle)
+        self.start_button_ax.add_patch(rectangle)
 
-        # View 200-260V button
-        self.def_view_button_ax = self.fig.add_axes(BTN_POS['def_view_btn'])
+        # Shutdown button
+        self.shutdown_button_ax = self.fig.add_axes(BTN_POS['shutdown_btn'])
 
         # Create the button with hover effect
-        self.def_view_button = Button(self.def_view_button_ax, '200-260V', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
-        #TODO self.def_view_button.on_clicked(self.controller.set_default_view)
+        self.shutdown_button = Button(self.shutdown_button_ax, 'SHUTDOWN', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
+        self.shutdown_button.on_clicked(partial(self._on_toggle_button_click, title="Shutdown process", prompt="Activate shutdown sequence.", addr=106))
 
         # Add the rectangle
         rectangle = plt.Rectangle(BTN_RECT_BORDER['start'], *BTN_RECT_BORDER['size'], 
                                 facecolor=HPHMI.gray, edgecolor=HPHMI.dark_gray, linewidth=BTN_RECT_BORDER['line_width'])
-        self.def_view_button_ax.add_patch(rectangle)
+        self.shutdown_button_ax.add_patch(rectangle)
 
         # View 100-140V button
         self.low_view_button_ax = self.fig.add_axes(BTN_POS['low_view_btn'])
 
         # Create the button with hover effect
-        self.low_view_button = Button(self.low_view_button_ax, '100-140V', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
+        self.low_view_button = Button(self.low_view_button_ax, 'UNUSED', color=HPHMI.dark_gray, hovercolor=HPHMI.dark_green)
         #TODO self.low_view_button.on_clicked(self.controller.set_low_view)
 
         # Add the rectangle
@@ -190,8 +190,8 @@ class ButtonView:
         self.desc_text = self.ax.text(center_x, center_y, "Reserved Faceplate Zone\n", weight='bold', ha='center',
                         va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
 
-        # Create select view rectangle
-        rect = RECT['select_view']
+        # Create misc operations rectangle
+        rect = RECT['misc_operations']
 
         # Add the rectangle to the axis instead of the figure
         self.description_box = self.ax.add_patch(
@@ -217,12 +217,12 @@ class ButtonView:
                     facecolor=HPHMI.gray, edgecolor=HPHMI.dark_gray, linewidth=1, clip_on=False)
         )
 
-        # For 'SELECT VIEW'
-        rect = RECT['select_view']
+        # For 'MISC OPERATIONS'
+        rect = RECT['misc_operations']
         center_x = rect[0] + rect[2] / 2
-        y_placement = TEXT_PLACEMENT['select_view'][1]
+        y_placement = TEXT_PLACEMENT['misc_operations'][1]
 
-        self.desc_text = self.ax.text(center_x, y_placement, "SELECT VIEW", weight='bold', ha='center',
+        self.desc_text = self.ax.text(center_x, y_placement, "MISC OPERATIONS", weight='bold', ha='center',
                         va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
 
         # For 'MANUAL ACTIONS'
