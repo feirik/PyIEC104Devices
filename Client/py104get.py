@@ -61,6 +61,8 @@ class IEC104Client:
         self.timeout = timeout
         self.sock = None
         self.print_debug = print_debug
+        self.send_sequence_number = 0  # Initialize send sequence number
+        self.receive_sequence_number = 0  # Initialize receive sequence number
 
 
     def start_data_transfer(self):
@@ -180,9 +182,9 @@ class IEC104Client:
                 else:
                     start_bytes = b'\x68\x0E'
                 # Assuming control fields for I-format frame, assumed client sends first message in TCP
-                send_sequence_number = b'\x00\x00'
-                receive_sequence_number = b'\x00\x00'
-                apci = start_bytes + send_sequence_number + receive_sequence_number  # Length is 14 bytes including APCI and ASDU
+                apci = start_bytes + \
+                   (self.send_sequence_number << 1).to_bytes(2, 'big') + \
+                   (self.receive_sequence_number << 1).to_bytes(2, 'big')
 
                 # Construct the ASDU
                 asdu = self.construct_asdu(type_id, cot, casdu, ioa, value)
@@ -230,6 +232,10 @@ class IEC104Client:
             try:
                 response = self.sock.recv(1024)
                 if response:
+                    # Extract sequence numbers from the response
+                    recv_send_seq_num, recv_recv_seq_num = struct.unpack('>HH', response[2:6])
+                    self.receive_sequence_number = recv_send_seq_num >> 1  # Update receive sequence number
+
                     if self.print_debug:
                         print(f"Received: {response.hex()}")
                     return response
@@ -282,7 +288,7 @@ class IEC104Client:
         asdu = bytearray()
 
         asdu.append(type_id)
-        asdu.append(0x01)
+        asdu.append(0x01) # Add Variable Structure Qualifier (VSQ) - One info object in ASDU
         asdu.append(cot)
         asdu.append(0x00) # Part of CASDU
 
