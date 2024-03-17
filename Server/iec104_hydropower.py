@@ -136,6 +136,7 @@ class IEC104Server:
         self.ioa_register[EXCITE_SWITCH] = 1
         time.sleep(25)
         self.ioa_register[TRANSFORMER_SWITCH] = 1
+        time.sleep(2)
         self.ioa_register[GRID_SWITCH] = 1
         self.ioa_register[START_PROCESS] = 0
 
