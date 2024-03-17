@@ -138,15 +138,15 @@ class HMIController:
         self.fetch_data_threaded(self.process_fetched_data)
 
         if self.data:
-            generator_voltage = self.data[GENERATOR_VOLTAGE]
-            grid_power = self.data[GRID_POWER]
-            bearing_temperature = self.data[BEARING_TEMP]
+            generator_voltage = round(self.data[GENERATOR_VOLTAGE], 1)
+            grid_power = round(self.data[GRID_POWER], 1)
+            bearing_temperature = round(self.data[BEARING_TEMP], 1)
             turbine_speed = self.data[TURBINE_SPEED]
 
             self.graph.update_graph(generator_voltage, grid_power)
 
-            self.dynamic_bar.update_bars(round(bearing_temperature, 1), turbine_speed, 
-                                            round(generator_voltage, 1), round(grid_power, 1))
+            self.dynamic_bar.update_bars(bearing_temperature, turbine_speed, 
+                                         generator_voltage, grid_power)
 
             water_in = self.data[WATER_INLET]
             exc_sw = self.data[EXCITE_SWITCH]
@@ -157,7 +157,8 @@ class HMIController:
             shutdown = self.data[SHUTDOWN_PROCESS]
 
             self.indicator.update_status(water_in, exc_sw, cool_sw, tr_sw, start, grid_sw, shutdown)
-
+            self.button_view.update_labels(water_in, exc_sw, tr_sw, grid_sw, 
+                                           turbine_speed, bearing_temperature, generator_voltage, grid_power)
 
         # Save the after_id to cancel it later upon closing
         self._after_id = self.view.after(READ_INTERVAL_MS, self.read_data_periodically)

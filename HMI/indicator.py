@@ -293,7 +293,6 @@ class Indicator:
                          va='center', fontsize=10, color=HPHMI.darker_gray, transform=self.fig.transFigure)
 
 
-
     def update_status(self, water_in, exc_sw, cool_sw, tr_sw, start, grid_sw, shutdown):
         """Update the status of boxes based on the read statuses."""
 
