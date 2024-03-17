@@ -29,6 +29,6 @@ The following command line arguments are available when running the IEC 104 serv
 
 To start the simulator, run the program with the desired command line arguments. For example, to start the simulator on a specific IP address and port with debugging information enabled, run the following command:
 
-``python3 -  --host 192.168.1.100 --port 2404 -d``
+``python3 iec104_hydropower.py --host 192.168.1.100 --port 2404 -d``
 
 The program will print out the IP address, port, and debug information settings to the console. The simulator will then listen for incoming IEC 104 requests, if they are supported by the server, on the specified IP address and port.
