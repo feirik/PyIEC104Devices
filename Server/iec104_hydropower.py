@@ -51,7 +51,7 @@ PROD_VOLTAGE = 5500 # Volts
 POWER_OUTPUT_CONV = 0.234 # P (kW) = V * sqrt(3) * I * cos(phi) / kW conv = V * sqrt(3) * 150 * 0.9 / 1000 = V * 0.234
 
 GRID_POWER_ADJUSTMENT_INTERVAL = 120  # 2 minutes in seconds
-GRID_POWER_FLUCTUATION = 0.4  # 30% change in demand
+GRID_POWER_FLUCTUATION = 0.4  # 40% change in demand
 GRID_POWER_MIDPOINT = 1305 # kW produced midpoint
 ADJUSTMENT_FACTOR = 30 # Used for setting how fast the grid power will change towards target point
 
