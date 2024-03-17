@@ -2,6 +2,8 @@
 
 from .py104get import IEC104Client
 
+import time
+
 class IEC104ClientAPI:
     def __init__(self, ip_address, port=2404, timeout=5):
         """
@@ -79,6 +81,9 @@ if __name__ == "__main__":
         print("Single command to IOA 105 failed.")
         read_success = False
 
+    client.close()
+    client = IEC104ClientAPI(ip_address, port, timeout)
+
     # Write a setpoint command to IOA 120 with the floating-point value 123.45
     if client.write_setpoint_command(120, 123.45):
         write_set_point_success = True
@@ -87,12 +92,18 @@ if __name__ == "__main__":
         print("Setpoint command to IOA 120 (123.45) failed.")
         read_success = False
 
+    client.close()
+    client = IEC104ClientAPI(ip_address, port, timeout)
+
     # Request data from all information objects from the server
     data = client.request_data()
 
     if data is None:
         read_success = False
         print("Failed to read data after first set of commands.")
+
+    client.close()
+    client = IEC104ClientAPI(ip_address, port, timeout)
 
     # Write a setpoint command to IOA 120 with the integer value 12345 (for testing overwrite)
     if client.write_setpoint_command(120, 12345):
@@ -101,6 +112,9 @@ if __name__ == "__main__":
     else:
         print("Overwrite setpoint command to IOA 120 (12345) failed.")
         read_success = False
+
+    client.close()
+    client = IEC104ClientAPI(ip_address, port, timeout)
 
     # Request data again from all information objects from the server
     data = client.request_data()

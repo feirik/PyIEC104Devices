@@ -43,7 +43,7 @@ python3 py104get.py 192.168.1.100 -p 2404 -w50 120,123
 Test the API by running the commands below from the **PyIEC104Devices** folder (The folder above this).
 
 ```shell
-python3 Server/api_py104get.py&
+python3 Server/iec104_hydropower.py&
 python3 -m Client.api_py104get.py
 ```
 
