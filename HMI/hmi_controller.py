@@ -137,28 +137,30 @@ class HMIController:
         # Start the data fetching process in a separate thread
         self.fetch_data_threaded(self.process_fetched_data)
 
-        if self.data:
-            generator_voltage = round(self.data[GENERATOR_VOLTAGE], 1)
-            grid_power = round(self.data[GRID_POWER], 1)
-            bearing_temperature = round(self.data[BEARING_TEMP], 1)
-            turbine_speed = self.data[TURBINE_SPEED]
+        try:
+            if self.data:
+                generator_voltage = round(self.data.get(GENERATOR_VOLTAGE, 0), 1)
+                grid_power = round(self.data.get(GRID_POWER, 0), 1)
+                bearing_temperature = round(self.data.get(BEARING_TEMP, 0), 1)
+                turbine_speed = self.data.get(TURBINE_SPEED, 0)
 
-            self.graph.update_graph(generator_voltage, grid_power)
+                self.graph.update_graph(generator_voltage, grid_power)
+                self.dynamic_bar.update_bars(bearing_temperature, turbine_speed, generator_voltage, grid_power)
 
-            self.dynamic_bar.update_bars(bearing_temperature, turbine_speed, 
-                                         generator_voltage, grid_power)
+                water_in = self.data.get(WATER_INLET, 0)
+                exc_sw = self.data.get(EXCITE_SWITCH, 0)
+                cool_sw = self.data.get(COOLING_SWITCH, 0)
+                tr_sw = self.data.get(TRANSFORMER_SWITCH, 0)
+                start = self.data.get(START_PROCESS, 0)
+                grid_sw = self.data.get(GRID_SWITCH, 0)
+                shutdown = self.data.get(SHUTDOWN_PROCESS, 0)
 
-            water_in = self.data[WATER_INLET]
-            exc_sw = self.data[EXCITE_SWITCH]
-            cool_sw = self.data[COOLING_SWITCH]
-            tr_sw = self.data[TRANSFORMER_SWITCH]
-            start = self.data[START_PROCESS]
-            grid_sw = self.data[GRID_SWITCH]
-            shutdown = self.data[SHUTDOWN_PROCESS]
+                self.indicator.update_status(water_in, exc_sw, cool_sw, tr_sw, start, grid_sw, shutdown)
+                self.button_view.update_labels(water_in, exc_sw, tr_sw, grid_sw, turbine_speed, 
+                                            bearing_temperature, generator_voltage, grid_power)
+        except Exception as e:
+            print(f"Error during data processing: {e}")
 
-            self.indicator.update_status(water_in, exc_sw, cool_sw, tr_sw, start, grid_sw, shutdown)
-            self.button_view.update_labels(water_in, exc_sw, tr_sw, grid_sw, 
-                                           turbine_speed, bearing_temperature, generator_voltage, grid_power)
 
         # Save the after_id to cancel it later upon closing
         self._after_id = self.view.after(READ_INTERVAL_MS, self.read_data_periodically)
