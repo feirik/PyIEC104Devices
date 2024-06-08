@@ -42,7 +42,7 @@ SHUTDOWN_PROCESS = 106 # IOA 106 - BOOL - Activate shutdown sequence
 TURBINE_SPEED = 110 # IOA 110 - Float - RPM of turbine
 GENERATOR_VOLTAGE = 111 # IOA 111 - Float - Voltage produced by generator
 GRID_POWER = 112 # IOA 112 - Estimated kW produced, demand will fluctuate
-BEARING_TEMP = 113 # IOA 113 - Bearing temp
+BEARING_TEMP = 113 # IOA 113 - Bearing temperature
 FLOAT_TEST = 120 # IOA 120 - Testing float write and read
 
 MAX_WATER_SPEED = 5 # m3/s
@@ -61,6 +61,11 @@ TEMPERATURE_STOP_COOLING = 40 # Stop cooling system at 40 degrees celsius
 COOLING_FACTOR = 0.02
 COOLING_DURATION = 30 # 30 seconds cycles of cooling
 
+# Error constants
+TEMPERATURE_ERROR = 110
+ERROR_FLOAT = 9999
+ERROR_BOOL = 1
+
 class IEC104Server:
     def __init__(self, host, port, debug=False):
         self.debug = debug
@@ -70,6 +75,9 @@ class IEC104Server:
         self.ioa_register = [0] * IOA_SIZE
         self.used_bool_ioa = []
         self.used_float_ioa = []
+
+        # Error boolean indicating process is malfunctioning
+        self.process_error = False
 
         # Set IOA startup values
         self.ioa_register[WATER_INLET] = 0
@@ -125,6 +133,10 @@ class IEC104Server:
             self.ioa_register[GRID_POWER] = self.update_grid_power()
             self.ioa_register[BEARING_TEMP] = self.update_bearing_temperature()
             self.ioa_register[COOLING_SWITCH] = self.manage_cooling_system()
+
+            # Overwrite values if process is malfunctioning
+            if self.process_error:
+                self.set_error_values()
 
             time.sleep(1)
 
@@ -259,6 +271,10 @@ class IEC104Server:
             decrease_amount = self.ioa_register[BEARING_TEMP] * COOLING_FACTOR
             bearing_temp = max(self.ioa_register[BEARING_TEMP] - decrease_amount, TEMPERATURE_ENV)
 
+        # Check if process is malfunctioning due to high temperature
+        if bearing_temp > TEMPERATURE_ERROR:
+            self.process_error = True
+
         return bearing_temp
 
 
@@ -285,6 +301,21 @@ class IEC104Server:
             enable_cooling = self.ioa_register[COOLING_SWITCH]
 
         return enable_cooling
+
+
+    def set_error_values(self):
+        self.ioa_register[TURBINE_SPEED] = ERROR_FLOAT
+        self.ioa_register[GENERATOR_VOLTAGE] = ERROR_FLOAT
+        self.ioa_register[GRID_POWER] = ERROR_FLOAT
+        self.ioa_register[BEARING_TEMP] = ERROR_FLOAT
+
+        self.ioa_register[WATER_INLET] = ERROR_BOOL
+        self.ioa_register[EXCITE_SWITCH] = ERROR_BOOL
+        self.ioa_register[TRANSFORMER_SWITCH] = ERROR_BOOL
+        self.ioa_register[GRID_SWITCH] = ERROR_BOOL
+        self.ioa_register[COOLING_SWITCH] = ERROR_BOOL
+        self.ioa_register[START_PROCESS] = ERROR_BOOL
+        self.ioa_register[SHUTDOWN_PROCESS] = ERROR_BOOL
 
 
     def listen(self):
