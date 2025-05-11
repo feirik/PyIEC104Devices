@@ -308,11 +308,11 @@ class Indicator:
 
         if exc_sw:
             self.excite_switch_box.set_facecolor(HPHMI.white)
-            self.excite_switch_text.set_text("ON")
+            self.excite_switch_text.set_text("CLOSED")
             self.excite_switch_text.set_color(HPHMI.dark_blue)
         else:
             self.excite_switch_box.set_facecolor(HPHMI.dark_gray)
-            self.excite_switch_text.set_text("OFF")
+            self.excite_switch_text.set_text("OPEN")
             self.excite_switch_text.set_color(HPHMI.dark_blue)
 
         if cool_sw:
@@ -326,11 +326,11 @@ class Indicator:
 
         if tr_sw:
             self.transformer_sw_box.set_facecolor(HPHMI.white)
-            self.transformer_sw_text.set_text("ON")
+            self.transformer_sw_text.set_text("CLOSED")
             self.transformer_sw_text.set_color(HPHMI.dark_blue)
         else:
             self.transformer_sw_box.set_facecolor(HPHMI.dark_gray)
-            self.transformer_sw_text.set_text("OFF")
+            self.transformer_sw_text.set_text("OPEN")
             self.transformer_sw_text.set_color(HPHMI.dark_blue)
 
         if start:
@@ -344,11 +344,11 @@ class Indicator:
 
         if grid_sw:
             self.grid_switch_box.set_facecolor(HPHMI.white)
-            self.grid_switch_text.set_text("ON")
+            self.grid_switch_text.set_text("CLOSED")
             self.grid_switch_text.set_color(HPHMI.dark_blue)
         else:
             self.grid_switch_box.set_facecolor(HPHMI.dark_gray)
-            self.grid_switch_text.set_text("OFF")
+            self.grid_switch_text.set_text("OPEN")
             self.grid_switch_text.set_color(HPHMI.dark_blue)
 
         if shutdown:

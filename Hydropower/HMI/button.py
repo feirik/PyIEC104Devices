@@ -410,9 +410,9 @@ class ButtonView:
         
         # Position the labels on the image
         self.value_labels["inlet_valve"].place(relx=0.07, rely=0.16, anchor="center")
-        self.value_labels["excite_breaker"].place(relx=0.165, rely=0.61, anchor="center")
-        self.value_labels["transformer_breaker_left"].place(relx=0.45, rely=0.15, anchor="center")
-        self.value_labels["transformer_breaker_right"].place(relx=0.68, rely=0.15, anchor="center")
+        self.value_labels["excite_breaker"].place(relx=0.15, rely=0.61, anchor="center")
+        self.value_labels["transformer_breaker_left"].place(relx=0.455, rely=0.15, anchor="center")
+        self.value_labels["transformer_breaker_right"].place(relx=0.675, rely=0.15, anchor="center")
         self.value_labels["grid_breaker"].place(relx=0.81, rely=0.39, anchor="center")
         
         self.value_labels["turbine_speed"].place(relx=0.11, rely=0.32, anchor="center")
@@ -437,28 +437,28 @@ class ButtonView:
                 self.value_labels['inlet_valve']['bg'] = HPHMI.dark_gray
 
             if exc_sw:
-                self.value_labels['excite_breaker']['text'] = "ON"
+                self.value_labels['excite_breaker']['text'] = "CLOSED"
                 self.value_labels['excite_breaker']['bg'] = HPHMI.white
             else:
-                self.value_labels['excite_breaker']['text'] = "OFF"
+                self.value_labels['excite_breaker']['text'] = "OPEN"
                 self.value_labels['excite_breaker']['bg'] = HPHMI.dark_gray
 
             if tr_sw:
-                self.value_labels['transformer_breaker_left']['text'] = "ON"
+                self.value_labels['transformer_breaker_left']['text'] = "CLOSED"
                 self.value_labels['transformer_breaker_left']['bg'] = HPHMI.white
-                self.value_labels['transformer_breaker_right']['text'] = "ON"
+                self.value_labels['transformer_breaker_right']['text'] = "CLOSED"
                 self.value_labels['transformer_breaker_right']['bg'] = HPHMI.white
             else:
-                self.value_labels['transformer_breaker_left']['text'] = "OFF"
+                self.value_labels['transformer_breaker_left']['text'] = "OPEN"
                 self.value_labels['transformer_breaker_left']['bg'] = HPHMI.dark_gray
-                self.value_labels['transformer_breaker_right']['text'] = "OFF"
+                self.value_labels['transformer_breaker_right']['text'] = "OPEN"
                 self.value_labels['transformer_breaker_right']['bg'] = HPHMI.dark_gray
 
             if grid_sw:
-                self.value_labels['grid_breaker']['text'] = "ON"
+                self.value_labels['grid_breaker']['text'] = "CLOSED"
                 self.value_labels['grid_breaker']['bg'] = HPHMI.white
             else:
-                self.value_labels['grid_breaker']['text'] = "OFF"
+                self.value_labels['grid_breaker']['text'] = "OPEN"
                 self.value_labels['grid_breaker']['bg'] = HPHMI.dark_gray
 
             self.value_labels['turbine_speed']['text'] = turb_speed
