@@ -38,8 +38,8 @@ ANA_BEARING_TEMP      = 10013  # IOA 15013 - Bearing temperature
 
 MAX_WATER_SPEED = 5 # m3/s
 MAX_TURBINE_SPEED = 250 # RPM
-PROD_VOLTAGE = 5500 # Volts
-POWER_OUTPUT_CONV = 0.234 # P (kW) = V * sqrt(3) * I * cos(phi) / kW conv = V * sqrt(3) * 150 * 0.9 / 1000 = V * 0.234
+PROD_VOLTAGE_MIDPOINT = 3300 # Volts
+PROD_VOLTAGE_LOW = 2500 # Volts
 
 GRID_POWER_ADJUSTMENT_INTERVAL = 120  # 2 minutes in seconds
 GRID_POWER_FLUCTUATION = 0.4  # 40% change in demand
@@ -64,6 +64,11 @@ class IEC104Server:
         # Create server and station
         self.server  = c104.Server(ip=host, port=port)
         self.station = self.server.add_station(common_address=CASDU)
+
+        if self.debug:
+            c104.set_debug_mode(c104.Debug.Server |
+                                 c104.Debug.Point |
+                                 c104.Debug.Callback)
 
         # Add single point measurement points
         self.sp_pts = {}
@@ -116,9 +121,17 @@ class IEC104Server:
             pt.value = float(self.ioa_register[ioa])
 
         self.water_speed = 0.0
+        self.grid_voltage = GRID_POWER_MIDPOINT
         self.grid_power_target = GRID_POWER_MIDPOINT
         self.last_target_update_time = time.time()
         self.last_cooling_start_time = None
+
+        self.listener_thread = threading.Thread(
+            target=self.server.start,
+            daemon=True,
+            name="IEC104-Listener"
+        )
+        self.listener_thread.start()
 
         # Start a thread to simulate data changes
         self.simulation_thread = threading.Thread(target=self.simulate_data)
@@ -133,7 +146,11 @@ class IEC104Server:
     ) -> c104.ResponseState:
         # Extract the 0/1 payload
         cmd: c104.SingleCmd = message.info
-        new_val = bool(cmd.value)
+        
+        if cmd.value:
+            new_val = 1
+        else:
+            new_val = 0
 
         if self.debug:
             print(f"[WRITE] IOA {point.io_address} -> {new_val}")
@@ -166,6 +183,7 @@ class IEC104Server:
                 shutdown_thread.start()
 
             self.update_water_speed()
+            self.update_grid_voltage()
             self.ioa_register[ANA_TURBINE_SPEED] = self.calculate_turbine_speed()
             self.ioa_register[ANA_GENERATOR_VOLTAGE] = self.update_generator_voltage()
             self.ioa_register[ANA_GRID_POWER] = self.update_grid_power()
@@ -241,12 +259,28 @@ class IEC104Server:
         else:
             # If the excite switch is on, calculate generator voltage based on turbine speed
             proportion = self.ioa_register[ANA_TURBINE_SPEED] / MAX_TURBINE_SPEED
-            base_voltage = proportion * PROD_VOLTAGE
-            # Random fluctuation of 3%
-            fluctuation = random.uniform(-0.03, 0.03)
+            base_voltage = proportion * PROD_VOLTAGE_MIDPOINT
+            # Random fluctuation of 5% for the generator voltage
+            fluctuation = random.uniform(-0.05, 0.05)
             generator_voltage = base_voltage * (1 + fluctuation)
 
+        if self.ioa_register[SP_GRID_SWITCH] == 1:
+            # Check if grid breaker was closed with a large voltage difference with the grid
+            if generator_voltage < (PROD_VOLTAGE_LOW):
+                self.process_error = True
+            else:
+                # Generator is forced to follow the grid voltage
+                generator_voltage = self.grid_voltage
+
         return generator_voltage
+
+
+    def update_grid_voltage(self):
+        """
+        Update the grid voltage with random fluctuations.
+        """
+        fluctuation = random.uniform(-0.03, 0.03)
+        self.grid_voltage = int(PROD_VOLTAGE_MIDPOINT * (1 + fluctuation))
 
 
     def update_grid_power_target(self):
@@ -271,7 +305,7 @@ class IEC104Server:
         # Output is 0 if transformer switch or grid switch is off, or low generator voltage
         if (self.ioa_register[SP_TRANSFORMER_SWITCH] == 0 or 
             self.ioa_register[SP_GRID_SWITCH] == 0 or
-            self.ioa_register[ANA_GENERATOR_VOLTAGE] < PROD_VOLTAGE * 0.8):
+            self.ioa_register[ANA_GENERATOR_VOLTAGE] < PROD_VOLTAGE_MIDPOINT * 0.8):
 
             grid_power = 0
         else:
@@ -357,15 +391,6 @@ class IEC104Server:
         self.ioa_register[SP_SHUTDOWN_PROCESS] = ERROR_BOOL
 
 
-    def start(self):
-        if self.debug:
-            c104.set_debug_mode(c104.Debug.Server |
-                                 c104.Debug.Point |
-                                 c104.Debug.Callback)
-
-        self.server.start()
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
@@ -378,7 +403,6 @@ if __name__ == '__main__':
     print(f"Starting IEC 104 server at {args.host}:{args.port} with debug mode {'enabled' if args.debug else 'disabled'}")
 
     server = IEC104Server(args.host, args.port, args.debug)
-    server.start()
     print("IEC-104 server is now listening on port", args.port)
     input("Press Enter to terminate the server\n")
     server.server.stop()

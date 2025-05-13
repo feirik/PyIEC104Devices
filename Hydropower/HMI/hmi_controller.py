@@ -178,7 +178,7 @@ class HMIController:
             common_address=CASDU,
             cause=c104.Cot.ACTIVATION,
             qualifier=c104.Qoi.STATION,
-            wait_for_response=True
+            wait_for_response=False
         )
 
         self.interrogating = False
