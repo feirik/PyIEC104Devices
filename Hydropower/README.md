@@ -6,7 +6,7 @@ This project contains a basic Python implementation of these parts:
 
 # Example of HMI in use:
 
-![HMI Screenshot](./HMI/assets/HMI_example.PNG)
+![HMI Screenshot](./HMI/assets/HMI_example_updated.PNG)
 
 # Dependencies
 

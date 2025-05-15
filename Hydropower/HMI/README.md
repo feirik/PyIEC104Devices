@@ -44,9 +44,9 @@ The HMI components:
 - **Control Buttons**: Controls for toggling the operational state of water inlets, cooling systems, excitation, and more.
 - **Status Indicators**: Displays the status the hydropower plant
 
-![HMI Screenshot](./assets/HMI_example.PNG)
+![HMI Screenshot](./assets/HMI_example_updated.PNG)
 
-System overview as a basis for the simulation:
+System overview visually showing the simplified simulation:
 
-![System Overview](./assets/Hydropower_overview.PNG)
+![System Overview](./assets/System_overview_example_updated.PNG)
 

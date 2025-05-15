@@ -371,7 +371,7 @@ class ButtonView:
         self.popup.geometry(f"{POPUP_WIDTH}x{POPUP_HEIGHT}")
 
         # Load and display the image
-        image = Image.open("assets/Hydropower_overview.PNG")
+        image = Image.open("assets/Hydropower_overview_updated.PNG")
         photo = ImageTk.PhotoImage(image)
         label = tk.Label(self.popup, image=photo)
         label.image = photo  # Keep a reference to avoid garbage collection
@@ -379,16 +379,19 @@ class ButtonView:
 
         # Create labels for displaying numbers on the image
         self.value_labels = {
-            "inlet_valve": tk.Label(self.popup, text="Load", bg=HPHMI.gray, fg=HPHMI.dark_blue,
+            "intake_gate": tk.Label(self.popup, text="Load", bg=HPHMI.gray, fg=HPHMI.dark_blue,
+                                font=("Arial", 14, "bold"), highlightbackground=HPHMI.dark_gray,
+                                highlightcolor=HPHMI.dark_gray, highlightthickness=2, padx=6, pady=4),
+            "main_inlet_valve": tk.Label(self.popup, text="Load", bg=HPHMI.gray, fg=HPHMI.dark_blue,
                                 font=("Arial", 14, "bold"), highlightbackground=HPHMI.dark_gray,
                                 highlightcolor=HPHMI.dark_gray, highlightthickness=2, padx=6, pady=4),
             "excite_breaker": tk.Label(self.popup, text="Load", bg=HPHMI.gray, fg=HPHMI.dark_blue,
                                 font=("Arial", 14, "bold"), highlightbackground=HPHMI.dark_gray,
                                 highlightcolor=HPHMI.dark_gray, highlightthickness=2, padx=6, pady=4),
-            "transformer_breaker_left": tk.Label(self.popup, text="Load", bg=HPHMI.gray, fg=HPHMI.dark_blue,
+            "transformer_breaker_upper": tk.Label(self.popup, text="Load", bg=HPHMI.gray, fg=HPHMI.dark_blue,
                                 font=("Arial", 14, "bold"), highlightbackground=HPHMI.dark_gray,
                                 highlightcolor=HPHMI.dark_gray, highlightthickness=2, padx=6, pady=4),
-            "transformer_breaker_right": tk.Label(self.popup, text="Load", bg=HPHMI.gray, fg=HPHMI.dark_blue,
+            "transformer_breaker_lower": tk.Label(self.popup, text="Load", bg=HPHMI.gray, fg=HPHMI.dark_blue,
                                 font=("Arial", 14, "bold"), highlightbackground=HPHMI.dark_gray,
                                 highlightcolor=HPHMI.dark_gray, highlightthickness=2, padx=6, pady=4),
             "grid_breaker": tk.Label(self.popup, text="Load", bg=HPHMI.gray, fg=HPHMI.dark_blue,
@@ -409,16 +412,17 @@ class ButtonView:
         }
         
         # Position the labels on the image
-        self.value_labels["inlet_valve"].place(relx=0.07, rely=0.16, anchor="center")
-        self.value_labels["excite_breaker"].place(relx=0.15, rely=0.61, anchor="center")
-        self.value_labels["transformer_breaker_left"].place(relx=0.455, rely=0.15, anchor="center")
-        self.value_labels["transformer_breaker_right"].place(relx=0.675, rely=0.15, anchor="center")
-        self.value_labels["grid_breaker"].place(relx=0.81, rely=0.39, anchor="center")
+        self.value_labels["intake_gate"].place(relx=0.26, rely=0.24, anchor="center")
+        self.value_labels["main_inlet_valve"].place(relx=0.53, rely=0.89, anchor="center")
+        self.value_labels["excite_breaker"].place(relx=0.695, rely=0.74, anchor="center")
+        self.value_labels["transformer_breaker_upper"].place(relx=0.54, rely=0.285, anchor="center")
+        self.value_labels["transformer_breaker_lower"].place(relx=0.54, rely=0.575, anchor="center")
+        self.value_labels["grid_breaker"].place(relx=0.54, rely=0.195, anchor="center")
         
-        self.value_labels["turbine_speed"].place(relx=0.11, rely=0.32, anchor="center")
-        self.value_labels["generator_voltage"].place(relx=0.31, rely=0.11, anchor="center")
-        self.value_labels["grid_power"].place(relx=0.91, rely=0.39, anchor="center")
-        self.value_labels["bearing_temperature"].place(relx=0.27, rely=0.39, anchor="center")
+        self.value_labels["turbine_speed"].place(relx=0.67, rely=0.84, anchor="center")
+        self.value_labels["generator_voltage"].place(relx=0.645, rely=0.465, anchor="center")
+        self.value_labels["grid_power"].place(relx=0.625, rely=0.07, anchor="center")
+        self.value_labels["bearing_temperature"].place(relx=0.635, rely=0.79, anchor="center")
 
         # Add a close button
         close_button = tk.Button(self.popup, text="Close Window", command=self.popup.destroy, 
@@ -430,11 +434,15 @@ class ButtonView:
         # Ensure that the update occurs only if the popup window is open and visible
         if hasattr(self, 'popup') and self.popup.winfo_exists() and self.popup.winfo_viewable():
             if water_in:
-                self.value_labels['inlet_valve']['text'] = "OPEN"
-                self.value_labels['inlet_valve']['bg'] = HPHMI.white
+                self.value_labels['intake_gate']['text'] = "OPEN"
+                self.value_labels['intake_gate']['bg'] = HPHMI.white
+                self.value_labels['main_inlet_valve']['text'] = "OPEN"
+                self.value_labels['main_inlet_valve']['bg'] = HPHMI.white
             else:
-                self.value_labels['inlet_valve']['text'] = "CLOSED"
-                self.value_labels['inlet_valve']['bg'] = HPHMI.dark_gray
+                self.value_labels['intake_gate']['text'] = "CLOSED"
+                self.value_labels['intake_gate']['bg'] = HPHMI.dark_gray
+                self.value_labels['main_inlet_valve']['text'] = "CLOSED"
+                self.value_labels['main_inlet_valve']['bg'] = HPHMI.dark_gray
 
             if exc_sw:
                 self.value_labels['excite_breaker']['text'] = "CLOSED"
@@ -444,15 +452,15 @@ class ButtonView:
                 self.value_labels['excite_breaker']['bg'] = HPHMI.dark_gray
 
             if tr_sw:
-                self.value_labels['transformer_breaker_left']['text'] = "CLOSED"
-                self.value_labels['transformer_breaker_left']['bg'] = HPHMI.white
-                self.value_labels['transformer_breaker_right']['text'] = "CLOSED"
-                self.value_labels['transformer_breaker_right']['bg'] = HPHMI.white
+                self.value_labels['transformer_breaker_upper']['text'] = "CLOSED"
+                self.value_labels['transformer_breaker_upper']['bg'] = HPHMI.white
+                self.value_labels['transformer_breaker_lower']['text'] = "CLOSED"
+                self.value_labels['transformer_breaker_lower']['bg'] = HPHMI.white
             else:
-                self.value_labels['transformer_breaker_left']['text'] = "OPEN"
-                self.value_labels['transformer_breaker_left']['bg'] = HPHMI.dark_gray
-                self.value_labels['transformer_breaker_right']['text'] = "OPEN"
-                self.value_labels['transformer_breaker_right']['bg'] = HPHMI.dark_gray
+                self.value_labels['transformer_breaker_upper']['text'] = "OPEN"
+                self.value_labels['transformer_breaker_upper']['bg'] = HPHMI.dark_gray
+                self.value_labels['transformer_breaker_lower']['text'] = "OPEN"
+                self.value_labels['transformer_breaker_lower']['bg'] = HPHMI.dark_gray
 
             if grid_sw:
                 self.value_labels['grid_breaker']['text'] = "CLOSED"
@@ -461,7 +469,7 @@ class ButtonView:
                 self.value_labels['grid_breaker']['text'] = "OPEN"
                 self.value_labels['grid_breaker']['bg'] = HPHMI.dark_gray
 
-            self.value_labels['turbine_speed']['text'] = turb_speed
+            self.value_labels['turbine_speed']['text'] = str(turb_speed) + " RPM"
             self.value_labels['generator_voltage']['text'] = gen_vol
             self.value_labels["grid_power"]['text'] = grid_pwr
             self.value_labels["bearing_temperature"]['text'] = str(bear_temp) + "°C"
