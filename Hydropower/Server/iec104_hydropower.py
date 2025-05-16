@@ -213,12 +213,13 @@ class IEC104Server:
     # Simulated shutdown process
     def shutdown_process_sequence(self):
         self.ioa_register[SP_GRID_SWITCH] = 0
-        self.ioa_register[SP_TRANSFORMER_SWITCH] = 0
-        time.sleep(1)
-        self.ioa_register[SP_EXCITE_SWITCH] = 0
         time.sleep(3)
+        self.ioa_register[SP_TRANSFORMER_SWITCH] = 0
+        self.ioa_register[SP_EXCITE_SWITCH] = 0
+        time.sleep(5)
         self.ioa_register[SP_WATER_INLET] = 0
         self.ioa_register[SP_COOLING_SWITCH] = 0
+        time.sleep(10)
         self.ioa_register[SP_SHUTDOWN_PROCESS] = 0  # Reset the shutdown process flag
 
     
@@ -253,11 +254,11 @@ class IEC104Server:
         """
         Update the generator voltage based on the turbine speed and excite switch.
         """
-        if self.ioa_register[SP_EXCITE_SWITCH] == 0:
-            # If the excite switch is off, set generator voltage to 0
+        if self.ioa_register[SP_EXCITE_SWITCH] == 0 or self.ioa_register[SP_TRANSFORMER_SWITCH] == 0:
+            # If the excite or transformed breaker switch is open, set generator voltage to 0
             generator_voltage = 0.0
         else:
-            # If the excite switch is on, calculate generator voltage based on turbine speed
+            # If the breakers are closed, calculate generator voltage based on turbine speed
             proportion = self.ioa_register[ANA_TURBINE_SPEED] / MAX_TURBINE_SPEED
             base_voltage = proportion * PROD_VOLTAGE_MIDPOINT
             # Random fluctuation of 5% for the generator voltage
@@ -285,7 +286,7 @@ class IEC104Server:
 
     def update_grid_power_target(self):
         """
-        Update the target grid power every 2 minutes.
+        Update the grid power target every 2 minutes.
         """
         current_time = time.time()
         if current_time - self.last_target_update_time >= GRID_POWER_ADJUSTMENT_INTERVAL:
@@ -377,6 +378,7 @@ class IEC104Server:
 
 
     def set_error_values(self):
+        # Set registers to error values, indicating protection relay tripped or physical damage
         self.ioa_register[ANA_TURBINE_SPEED] = ERROR_FLOAT
         self.ioa_register[ANA_GENERATOR_VOLTAGE] = ERROR_FLOAT
         self.ioa_register[ANA_GRID_POWER] = ERROR_FLOAT
