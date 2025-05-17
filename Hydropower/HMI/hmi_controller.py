@@ -1,6 +1,4 @@
 import tkinter as tk
-import os
-import sys
 import threading
 import time
 import c104
@@ -127,7 +125,7 @@ class HMIController:
         self.graph = GraphView(self.view)
         self.graph.canvas_widget.grid(row=0, column=0, columnspan=2, pady=20, padx=20)
         
-        # Initialization for periodic reading of holding register
+        # Initialization for periodic readings
         self._after_id = self.view.after(READ_INTERVAL_MS, self.read_data_periodically)
 
         self.dynamic_bar = DynamicBar(self.view)
