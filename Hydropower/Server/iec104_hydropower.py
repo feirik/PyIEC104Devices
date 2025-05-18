@@ -31,10 +31,10 @@ CMD_START_PROCESS     = 15105
 CMD_SHUTDOWN_PROCESS  = 15106
 
 # Analog (float) MEASUREMENT IOAs (type=M_ME_NC_1)
-ANA_TURBINE_SPEED     = 10010  # IOA 15010 - RPM of turbine
-ANA_GENERATOR_VOLTAGE = 10011  # IOA 15011 - Voltage produced by generator
-ANA_GRID_POWER        = 10012  # IOA 15012 - Estimated kW produced
-ANA_BEARING_TEMP      = 10013  # IOA 15013 - Bearing temperature
+ANA_TURBINE_SPEED     = 10010  # IOA 10010 - RPM of turbine
+ANA_GENERATOR_VOLTAGE = 10011  # IOA 10011 - Voltage produced by generator
+ANA_GRID_POWER        = 10012  # IOA 10012 - Estimated kW produced
+ANA_BEARING_TEMP      = 10013  # IOA 10013 - Bearing temperature
 
 MAX_WATER_SPEED = 5 # m3/s
 MAX_TURBINE_SPEED = 250 # RPM
