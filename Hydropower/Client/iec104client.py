@@ -4,6 +4,8 @@ import argparse
 import time
 import c104
 
+CONNECTION_TIMEOUT = 5
+
 class IEC104Shell(cmd.Cmd):
     intro = "IEC-104 interactive shell.  Type help or ? to list commands.\n"
     prompt = "iec104> "
@@ -31,9 +33,16 @@ class IEC104Shell(cmd.Cmd):
         self.points_added_to_connection = False
 
         self.client.start()
+
+        start_time = time.time()
+
         while self.conn.state != c104.ConnectionState.OPEN:
-            time.sleep(0.01)
-        print(f"Connected to {host}:{port}, CA={ca}")
+            if time.time() - start_time > CONNECTION_TIMEOUT:
+                print(f"Failed to connect to {self.host}:{self.port}")
+                exit(1)
+            time.sleep(0.05)
+        debug_state = "on" if self.debug else "off"
+        print(f"Connected to {host}:{port}, CASDU={ca}, debug={debug_state}")
 
 
     # handle unexpected incoming messages such as type ID mismatches
@@ -387,7 +396,7 @@ class IEC104Shell(cmd.Cmd):
                 self.point_definitions[ioa] = ptype
             for ioa, point_type in self.point_definitions.items():
                 self.station.add_point(io_address=ioa, type=point_type)
-                print(f"Registered IOA {ioa} as {type_name}")
+                print(f"Registered IOA {ioa} as {point_type}")
 
             self.client.start()
             while self.conn.state != c104.ConnectionState.OPEN:
