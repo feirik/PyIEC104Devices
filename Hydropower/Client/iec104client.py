@@ -429,6 +429,31 @@ class IEC104Shell(cmd.Cmd):
         if proceed:
             self.points_added_to_connection = True
 
+    
+    def do_list(self, arg):
+        """list — show supported IEC-104 TypeNames"""
+        rows = [
+            ("M_SP_NA_1", "Single-point measurement", "digital status read"),
+            ("M_ME_NC_1", "Floating-point measurement", "analog read (float)"),
+            ("C_SC_NA_1", "Single-point command", "digital on/off write"),
+            ("C_SE_NC_1", "Set-point command", "analog float write"),
+        ]
+        headers = ("TypeName", "Description", "Use")
+        # Determine max width for each column
+        col_widths = []
+        for col_idx in range(len(headers)):
+            max_in_col = max(len(str(r[col_idx])) for r in rows + [headers])
+            col_widths.append(max_in_col)
+        # Build a format string like "{:<12}  {:<25}  {:<20}"
+        fmt = "  ".join(f"{{:<{w}}}" for w in col_widths)
+
+        # Print header, separator, then rows
+        print(fmt.format(*headers))
+        print(fmt.format(*["─" * w for w in col_widths]))
+        for name, desc, use in rows:
+            print(fmt.format(name, desc, use))
+
+
     # Exit the interactive shell
     def do_exit(self, arg):
         "exit  — quit"
